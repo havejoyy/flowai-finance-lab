@@ -1,0 +1,4 @@
+interface:
+  display_name: "上市公司财报分析"
+  short_description: "从上市公司财报提取核心事实并检查盈利质量、现金流与财务风险"
+  default_prompt: "使用 $financial-report-analysis 分析这份上市公司财报并列出证据与待核实风险。"

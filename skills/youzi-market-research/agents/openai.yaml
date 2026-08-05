@@ -1,0 +1,4 @@
+interface:
+  display_name: "游资市场研究"
+  short_description: "按五层漏斗研究市场情绪、主线板块、标的证据与风险纪律"
+  default_prompt: "使用 $youzi-market-research 对这份市场与标的数据做五层漏斗研究，不提供交易指令。"
