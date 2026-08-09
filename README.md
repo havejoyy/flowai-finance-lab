@@ -8,6 +8,7 @@
 |---|---|
 | [`daily-market-review`](skills/daily-market-review/) | 七步结构化A股盘后复盘 |
 | [`financial-report-analysis`](skills/financial-report-analysis/) | 上市公司财报事实提取与风险检查 |
+| [`longhubang-analysis`](skills/longhubang-analysis/) | 六步龙虎榜席位解读与游资意图推演 |
 | [`youzi-market-research`](skills/youzi-market-research/) | 五层漏斗式短线市场证据研究 |
 
 ## 一键安装

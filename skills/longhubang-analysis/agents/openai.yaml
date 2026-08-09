@@ -1,0 +1,4 @@
+interface:
+  display_name: "龙虎榜解读"
+  short_description: "按六步框架解读龙虎榜席位画像、买卖结构与游资意图"
+  default_prompt: "使用 $longhubang-analysis 对这份龙虎榜数据做六步解读，不提供交易指令。"
