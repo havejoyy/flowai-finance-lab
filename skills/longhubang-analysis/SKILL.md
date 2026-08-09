@@ -7,6 +7,25 @@ description: 根据用户提供的龙虎榜数据生成结构化席位解读，�
 
 把公开的龙虎榜数据翻译成可追溯的六步席位解读。只依据用户提供或可核验的数据工作；缺失项标记为"信息不足"，不得补造席位行为或当日行情。
 
+## 数据获取（安装即可用）
+
+本仓库自带数据获取脚本 `scripts/fetch_longhubang.py`，纯 Python 标准库实现，无需安装第三方包。安装 Skill 后可直接运行：
+
+```bash
+# 获取当日龙虎榜数据，输出 Markdown（默认）
+python3 scripts/fetch_longhubang.py 2026-08-07
+
+# 保存到文件
+python3 scripts/fetch_longhubang.py 2026-08-07 > lhb-2026-08-07.md
+
+# 输出 JSON 格式
+python3 scripts/fetch_longhubang.py 2026-08-07 --json > lhb-2026-08-07.json
+```
+
+数据来源：东方财富数据中心公开 API（`RPT_DAILYBILLBOARD_DETAILSNEW`）。脚本输出包含涨跌分布、净买入 TOP20、净卖出 TOP20、全部个股明细和席位摘要（EXPLAIN 字段）。
+
+**数据局限**：脚本获取的是汇总数据，含席位摘要但不包含完整的买卖前五席位明细。如需完整席位明细，可从东方财富龙虎榜详情页手动获取，或安装 akshare 库使用 `ak.stock_lhb_detail_em()`。
+
 ## 执行顺序
 
 1. **确认上榜定位**：记录交易日期、上榜原因（日涨幅偏离值/日振幅/连续累计）、涨跌幅、换手率。不同触发原因含义不同，不得混为一谈。

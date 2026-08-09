@@ -44,6 +44,23 @@ npx skills use havejoyy/flowai-finance-lab --skill financial-report-analysis --a
 npx skills update
 ```
 
+## 龙虎榜数据获取（安装即可用）
+
+龙虎榜 Skill 自带数据获取脚本，纯 Python 标准库实现，无需安装第三方包：
+
+```bash
+# 获取当日龙虎榜数据，输出 Markdown
+python3 scripts/fetch_longhubang.py 2026-08-07
+
+# 保存到文件，直接喂给 Skill 解读
+python3 scripts/fetch_longhubang.py 2026-08-07 > lhb-2026-08-07.md
+
+# 输出 JSON 格式
+python3 scripts/fetch_longhubang.py 2026-08-07 --json
+```
+
+数据来源：东方财富数据中心公开 API。输出包含涨跌分布、净买入 TOP20、净卖出 TOP20、全部个股明细和席位摘要。
+
 ## 本地验证
 
 ```bash
