@@ -22,6 +22,9 @@ npx skills add havejoyy/flowai-finance-lab --skill '*' --agent codex --global --
 
 # 只安装财报分析
 npx skills add havejoyy/flowai-finance-lab --skill financial-report-analysis --agent codex --global --yes
+
+# 只安装龙虎榜分析（包含真实数据抓取脚本）
+npx skills add havejoyy/flowai-finance-lab --skill longhubang-analysis --agent codex --global --yes
 ```
 
 其他常见 Agent：
@@ -46,25 +49,28 @@ npx skills update
 
 ## 龙虎榜数据获取（安装即可用）
 
-龙虎榜 Skill 自带数据获取脚本，纯 Python 标准库实现，无需安装第三方包：
+龙虎榜 Skill 自带完整数据获取脚本，纯 Python 标准库实现，无需安装 AkShare、pandas 或 requests。以下命令从仓库根目录运行：
 
 ```bash
 # 获取当日龙虎榜数据，输出 Markdown
-python3 scripts/fetch_longhubang.py 2026-08-07
+python3 skills/longhubang-analysis/scripts/fetch_longhubang.py 2026-08-07
 
 # 保存到文件，直接喂给 Skill 解读
-python3 scripts/fetch_longhubang.py 2026-08-07 > lhb-2026-08-07.md
+python3 skills/longhubang-analysis/scripts/fetch_longhubang.py 2026-08-07 > lhb-2026-08-07.md
 
 # 输出 JSON 格式
-python3 scripts/fetch_longhubang.py 2026-08-07 --json
+python3 skills/longhubang-analysis/scripts/fetch_longhubang.py 2026-08-07 --json
 ```
 
-数据来源：东方财富数据中心公开 API。输出包含涨跌分布、净买入 TOP20、净卖出 TOP20、全部个股明细和席位摘要。
+安装后也可从已安装的 `longhubang-analysis` Skill 目录运行同一脚本。Agent 在用户只提供交易日期时，会按 Skill 规则自动执行脚本后再分析。
+
+数据来源：东方财富数据中心公开 API。默认输出当日汇总、每个上榜原因及对应买卖前五席位；同一股票的多种上榜原因按 `TRADE_ID` 分开保存。使用 `--summary-only` 可降级为快速汇总模式。
 
 ## 本地验证
 
 ```bash
 python3 scripts/validate_skills.py
+python3 -m unittest discover -s tests -v
 npx skills add . --list
 ```
 

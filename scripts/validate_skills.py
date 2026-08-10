@@ -12,6 +12,7 @@ ROOT = Path(__file__).resolve().parents[1]
 SKILLS = ROOT / "skills"
 NAME_RE = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 LINK_RE = re.compile(r"\[[^]]+\]\(([^)]+)\)")
+SCRIPT_RE = re.compile(r"(?<![\w/])scripts/([A-Za-z0-9_.-]+\.py)")
 FORBIDDEN = ("TODO", "[TODO:")
 
 
@@ -71,6 +72,13 @@ def main() -> int:
             clean = target.split("#", 1)[0]
             if clean and not (path.parent / clean).resolve().exists():
                 errors.append(f"{rel}: broken local link {target}")
+
+        for script_name in sorted(set(SCRIPT_RE.findall(body))):
+            target = path.parent / "scripts" / script_name
+            if not target.is_file():
+                errors.append(
+                    f"{rel}: referenced script is not packaged: scripts/{script_name}"
+                )
 
         agent_yaml = path.parent / "agents" / "openai.yaml"
         if not agent_yaml.exists():
