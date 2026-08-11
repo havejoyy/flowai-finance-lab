@@ -1,4 +1,4 @@
 interface:
   display_name: "A股每日复盘"
   short_description: "根据市场数据结构化复盘A股情绪周期、主线板块与风险信号"
-  default_prompt: "使用 $daily-market-review 根据我提供的市场数据生成今日A股结构化复盘。"
+  default_prompt: "使用 $daily-market-review 自动获取或整理A股收盘数据；需要时与 longhubang-analysis 按证券代码联动，生成结构化复盘。"

@@ -1,5 +1,18 @@
 # 七步复盘字段与模板
 
+## 标准 JSON 契约
+
+- `schema_version`: 固定为 `daily-market-review/v1`。
+- `trade_date/source/fetched_at/complete/errors`: 数据截面和完整性。
+- `market`: 指数、全市场家数、涨跌家数及成交额。
+- `sentiment`: 涨跌停、炸板、触板、炸板率与最高连板。
+- `boards`: 行业维度的强度、涨停数量、成交及代表性标的。
+- `stocks`: 用于按证券代码联动的全市场个股快照。
+- `representative_stocks`: 涨停候选的连板、五日量比及前高信息。
+- `limitations`: 自动推算边界；分析时不得省略。
+
+联动输出 `market-longhubang-linked/v1` 保留完整 `market_review`、`longhubang`，并在 `cross_validation` 中按代码提供市场上下文。`matched` 只表示数据匹配，不表示五层证据自动通过。
+
 ## 最小输入
 
 - 交易日期与数据截止时间
