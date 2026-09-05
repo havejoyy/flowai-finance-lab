@@ -10,6 +10,7 @@
 | [`financial-report-analysis`](skills/financial-report-analysis/) | 上市公司财报事实提取与风险检查 |
 | [`longhubang-analysis`](skills/longhubang-analysis/) | 真实龙虎榜席位解读、结构信号与五层证据验证 |
 | [`youzi-market-research`](skills/youzi-market-research/) | 五层漏斗式短线市场证据研究 |
+| [`stock-character-analysis`](skills/stock-character-analysis/) | 用波动、趋势、流动性、活跃度和回撤恢复生成股性画像 |
 
 ## 一键安装
 
@@ -25,6 +26,9 @@ npx skills add havejoyy/flowai-finance-lab --skill financial-report-analysis --a
 
 # 只安装龙虎榜分析（包含真实数据抓取脚本）
 npx skills add havejoyy/flowai-finance-lab --skill longhubang-analysis --agent codex --global --yes
+
+# 只安装股性分析（输入股票代码即可使用）
+npx skills add havejoyy/flowai-finance-lab --skill stock-character-analysis --agent codex --global --yes
 
 # 联合安装每日复盘和龙虎榜分析
 npx skills add havejoyy/flowai-finance-lab --skill daily-market-review --skill longhubang-analysis --agent codex --global --yes
@@ -42,6 +46,7 @@ npx skills add havejoyy/flowai-finance-lab --skill '*' --agent trae-cn --global 
 
 ```bash
 npx skills use havejoyy/flowai-finance-lab --skill financial-report-analysis --agent codex
+npx skills use havejoyy/flowai-finance-lab --skill stock-character-analysis --agent codex
 ```
 
 更新已安装 Skill：
@@ -90,6 +95,31 @@ python3 skills/longhubang-analysis/scripts/fetch_longhubang.py 2026-08-11 --json
 - 指数、历史K线或席位接口部分失败时，输出会保留 `complete`、`errors` 和缺失字段，不补造行情。
 
 数据来源：东方财富公开行情与数据中心接口。龙虎榜使用 `--summary-only` 可降级为快速汇总模式。
+
+## 股性分析（输入代码即可用）
+
+`stock-character-analysis` 把“股性”拆成波动、趋势、流动性、活跃度和回撤恢复五组可验证数据。它用于理解股票在指定历史窗口内的交易特征，不预测未来涨跌，也不提供买卖点。
+
+安装后直接告诉 Agent：
+
+```text
+调用 stock-character-analysis，分析 600519 最近的股性。
+```
+
+也可以从仓库根目录运行脚本：
+
+```bash
+# 自动获取截至最近交易日的前复权日线
+python3 skills/stock-character-analysis/scripts/analyze_stock_character.py 600519 --json
+
+# 指定截止日期
+python3 skills/stock-character-analysis/scripts/analyze_stock_character.py 600519 --end 2026-09-04 --json
+
+# 使用本地日线 CSV
+python3 skills/stock-character-analysis/scripts/analyze_stock_character.py --input daily.csv --json
+```
+
+输出遵循 `stock-character-analysis/v1`，包含数据来源、观察日期、样本数、五维指标、阶段标签、标签证据和限制条件。完整口径见 [股性分析使用说明](docs/stock-character-analysis.md)。
 
 ## 本地验证
 

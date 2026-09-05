@@ -1,0 +1,4 @@
+interface:
+  display_name: "A股股性分析"
+  short_description: "用五维指标识别股票的历史交易特征"
+  default_prompt: "请分析这只A股最近的股性，列出波动、趋势、流动性、活跃度和回撤恢复证据，并说明标签的失效条件。"
