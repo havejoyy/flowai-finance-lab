@@ -8,9 +8,16 @@
 |---|---|
 | [`daily-market-review`](skills/daily-market-review/) | 自动取数、标准 JSON 与七步结构化A股盘后复盘 |
 | [`financial-report-analysis`](skills/financial-report-analysis/) | 上市公司财报事实提取与风险检查 |
+| [`financial-report-changes`](skills/financial-report-changes/) | 两期财报变化核验、公司解释与待查清单；[教程与下载](docs/financial-report-changes.md) |
 | [`longhubang-analysis`](skills/longhubang-analysis/) | 真实龙虎榜席位解读、结构信号与五层证据验证 |
 | [`youzi-market-research`](skills/youzi-market-research/) | 五层漏斗式短线市场证据研究 |
 | [`stock-character-analysis`](skills/stock-character-analysis/) | 用波动、趋势、流动性、活跃度和回撤恢复生成股性画像 |
+
+## 财报变化追踪
+
+[下载独立Skill包](downloads/financial-report-changes-skill.zip) · [使用教程](docs/financial-report-changes.md) · [可复制模板](docs/financial-report-changes-prompt.txt)
+
+输入两期同类财报，先核对三指标，再查附注解释与待核实问题。
 
 ## 一键安装
 

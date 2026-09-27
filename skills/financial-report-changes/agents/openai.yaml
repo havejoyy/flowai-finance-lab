@@ -1,0 +1,4 @@
+interface:
+  display_name: "财报变化追踪"
+  short_description: "核对两期财报口径与比较基数，生成带来源和待核实问题的变化清单"
+  default_prompt: "使用 $financial-report-changes 对比这两份财报，找出值得继续核实的变化，并标注页码。"
