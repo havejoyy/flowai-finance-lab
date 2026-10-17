@@ -1,0 +1,4 @@
+interface:
+  display_name: "A股恐慌压力指标"
+  short_description: "自动获取公开月度行情并计算恐慌压力与三分项，无需准备数据，标注日期和口径"
+  default_prompt: "使用 $panic-pressure-index 自动获取公开行情，计算最近可计算日的恐慌压力总分和三分项，注明数据日期与公开版口径。"

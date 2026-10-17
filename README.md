@@ -6,6 +6,7 @@
 
 | Skill | 用途 |
 |---|---|
+| [`panic-pressure-index`](skills/panic-pressure-index/) | 自动获取公开月度行情，计算恐慌压力总分及三分项；注明日期和公开版口径 |
 | [`daily-market-review`](skills/daily-market-review/) | 自动取数、标准 JSON 与七步结构化A股盘后复盘 |
 | [`financial-report-analysis`](skills/financial-report-analysis/) | 上市公司财报事实提取与风险检查 |
 | [`financial-report-changes`](skills/financial-report-changes/) | 两期财报变化核验、公司解释与待查清单；[教程与下载](docs/financial-report-changes.md) |
@@ -18,6 +19,46 @@
 [下载独立Skill包](downloads/financial-report-changes-skill.zip) · [使用教程](docs/financial-report-changes.md) · [可复制模板](docs/financial-report-changes-prompt.txt)
 
 输入两期同类财报，先核对三指标，再查附注解释与待核实问题。
+
+## 恐慌压力指标 Skill（自动取数）
+
+[独立Skill下载](downloads/panic-pressure-index-skill.zip) · [完整使用说明](skills/panic-pressure-index/references/public-data.md)
+
+自动获取公开行情，输出0—100恐慌压力总分、强度分、扩散分、抛压分及实际数据日期。无需上传交易记录、准备行情、配置API密钥，也不依赖作者维护数据服务。
+
+```bash
+# 安装到 Codex
+npx skills add havejoyy/flowai-finance-lab --skill panic-pressure-index --agent codex --global --yes
+```
+
+安装后，对支持本地脚本执行的AI工具说：
+
+```text
+调用 panic-pressure-index，计算最近可用交易日的恐慌压力，
+给出总分、三个分项和实际数据日期。
+```
+
+也可从仓库根目录运行：
+
+```bash
+python3 skills/panic-pressure-index/scripts/panic_pressure.py
+python3 skills/panic-pressure-index/scripts/panic_pressure.py --date 2026-09-30 --json
+# 明确使用已下载缓存，不检查网络更新
+python3 skills/panic-pressure-index/scripts/panic_pressure.py --offline
+```
+
+**环境与首次运行：** Python 3.9+、联网和数GB磁盘空间；需要时自动在专用虚拟环境安装numpy/h5py，不修改系统Python。首次下载约1GB，初始化400个交易日；默认缓存位于 `~/.cache/panic-pressure-index`，可通过 `--cache-dir`指定。已在macOS上实测；其他系统尚未验收。
+
+**后续运行：** 检查公开源更新，相同数据包校验并复用原始因子缓存，重新计算排名及总分；发现新包后重建整批历史，避免拼接不同股票池或供应商修订版本。
+
+**真实测试（2026-10-17执行，行情日2026-09-30）：** 从空缓存下载公开数据，对5188只存续股票、400个交易日计算；当日有效样本4972只，各因子399个历史参考日。总分 **67.4**，强度 **88.6**、扩散 **59.8**、抛压 **53.9**。
+
+**请先了解这两个限制：**
+
+- **上游数据包按月更新，不是每日或实时行情。** 输出中的数据日期才是指标对应日期；指定日期缺失或数据不合格时返回无可用分数，不冒用旧日期。
+- **公开版CN_PANIC_PUBLIC_V1用当前存续股票回看历史，存在幸存者偏差。** 六因子公式保留，但股票池和参考样本与原版本不同，不能直接比较或拼接分数。它是研究试验指标，不提供买卖信号。
+
+软件授权不包含供应商数据的额外使用或转授权许可。行情只下载到用户本地缓存，不随仓库或Skill安装包分发。
 
 ## 一键安装
 
