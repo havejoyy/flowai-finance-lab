@@ -8,7 +8,7 @@ from threading import Lock
 from datetime import datetime, timedelta
 from urllib.parse import urlencode
 from urllib.request import Request, build_opener, ProxyHandler
-from urllib.error import URLError
+from urllib.error import URLError,HTTPError
 from http.client import RemoteDisconnected
 from engine import CN, timestamp, digest
 from providers import NoRedirect
@@ -198,7 +198,7 @@ def fetch_sina_snapshot(progress=lambda message: None, now=None, reader=None):
         text = raw.decode('gb18030')
         evidence.append(dict(url=url, fetched_at=timestamp(), raw=text))
         return text
-    progress('东方财富列表连接失败，正在实时获取新浪备用目录')
+    progress('东方财富列表不可用，正在实时获取新浪备用目录')
     catalog = sina_catalog(read, progress)
     if not catalog:
         raise ValueError('备用目录没有沪深A股')
@@ -217,7 +217,10 @@ def fetch_sina_snapshot(progress=lambda message: None, now=None, reader=None):
 def fetch_snapshot(progress=lambda message: None, getter=get_json, now=None):
     try:
         snapshot = fetch_eastmoney_snapshot(progress, getter, now)
-    except SourceUnavailable as exc:
+    except (SourceUnavailable,HTTPError) as exc:
+        # Never follow an untrusted redirect. A different public provider is
+        # independent, and its entire response still passes the normal checks.
+        if isinstance(exc,HTTPError) and exc.code not in (301,302,303,307,308):raise
         snapshot = fetch_sina_snapshot(progress, now)
         snapshot['fallback_reason'] = str(exc)
     snapshot['adapter_version'] = 'public-market-v2'
@@ -259,7 +262,8 @@ def fetch_history(stock, as_of, getter=get_json, start=None):
         params['beg'] = start.replace('-', '')
     try:
         data = getter(HISTORY_URL, params)
-    except SourceUnavailable as exc:
+    except (SourceUnavailable,HTTPError) as exc:
+        if isinstance(exc,HTTPError) and exc.code not in (301,302,303,307,308):raise
         history = fetch_secondary_history(stock, as_of, start=start)
         history['fallback_reason'] = str(exc)
         return history

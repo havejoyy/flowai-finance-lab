@@ -30,7 +30,7 @@ class ScreeningTests(unittest.TestCase):
             before=opener.open.call_count
             with self.assertRaises(SourceUnavailable):public_bytes('https://hq.sinajs.cn/','https://finance.sina.com.cn/')
             self.assertEqual(opener.open.call_count-before,2)
-    def test_live_fallback_only_on_transport_error(self):
+    def test_live_fallback_only_on_transport_or_refused_redirect(self):
         def failed(u,p):raise SourceUnavailable('断连')
         with patch('screening_data.fetch_sina_snapshot',return_value={'data_kind':'real'}) as fallback:
             self.assertEqual(fetch_snapshot(getter=failed)['fallback_reason'],'断连')
@@ -38,6 +38,16 @@ class ScreeningTests(unittest.TestCase):
         with patch('screening_data.fetch_sina_snapshot') as fallback:
             with self.assertRaises(ValueError):fetch_snapshot(getter=lambda u,p:{'total':1,'diff':[]})
             fallback.assert_not_called()
+        for code in (302,307,403):
+            error=HTTPError('https://push2.eastmoney.com/api/',code,'status',{'Location':'https://untrusted.example/'},None)
+            def failed(u,p):raise error
+            with patch('screening_data.fetch_sina_snapshot',return_value={'data_kind':'real'}) as fallback:
+                if code==403:
+                    with self.assertRaises(HTTPError):fetch_snapshot(getter=failed)
+                    fallback.assert_not_called()
+                else:
+                    self.assertIn(str(code),fetch_snapshot(getter=failed)['fallback_reason']);fallback.assert_called_once()
+
     def test_sina_units_dates_coverage_and_missing(self):
         parts=['0']*33
         parts[0]='测试';parts[2]='10';parts[3]='11';parts[9]='123456789.12'
@@ -98,6 +108,10 @@ class ScreeningTests(unittest.TestCase):
             def failed(u,p):raise SourceUnavailable('断连')
             self.assertEqual(fetch_history({'code':'600000','market':1},s['as_of'],getter=failed)['fallback_reason'],'断连')
             fallback.assert_called_once()
+        with patch('screening_data.fetch_secondary_history',return_value={'rows':rows}) as fallback:
+            def redirected(u,p):raise HTTPError('https://push2his.eastmoney.com',302,'redirect',{},None)
+            self.assertIn('302',fetch_history({'code':'600000','market':1},s['as_of'],getter=redirected)['fallback_reason']);fallback.assert_called_once()
+
     def test_parameter_boundaries(self):
         for params in [{'max_check':10.5},{'max_check':121},{'volume_ratio':float('nan')},{'min_pct':True},{'extra':1},[]]:
             with self.assertRaises(ValueError):strategy(dict(template='volume',params=params))
