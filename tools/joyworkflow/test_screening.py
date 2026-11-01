@@ -168,7 +168,7 @@ class ScreeningHTTPTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as root:
             process=None
             def launch():
-                proc=subprocess.Popen([sys.executable,'app.py','--no-browser','--port','0','--data-dir',root],stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
+                proc=subprocess.Popen([sys.executable,'app.py','--no-browser','--port','0','--data-dir',root],stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True,encoding='utf-8')
                 line=proc.stdout.readline();self.assertTrue(line.startswith('JoyWorkflow:'),line)
                 address=line.split('JoyWorkflow: ')[1].strip()
                 with urlopen(address) as r:html=r.read().decode()

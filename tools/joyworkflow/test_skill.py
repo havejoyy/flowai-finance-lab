@@ -17,10 +17,10 @@ class SkillTests(unittest.TestCase):
         for content in resources()['documents'].values():self.assertIn(content,p['messages'][0]['content'])
         self.assertNotIn(self.config['llm_key'],encode(p))
         root=Path(self.tmp.name)/'resources';shutil.copytree(RESOURCE,root)
-        (root/'SKILL.md').write_text('corrupted')
+        (root/'SKILL.md').write_text('corrupted', encoding='utf-8')
         with self.assertRaisesRegex(ValueError,'SKILL_UNAVAILABLE'):resources(root)
-        manifest=json.loads((root/'manifest.json').read_text());manifest['files']['SKILL.md']=hashlib.sha256(b'corrupted').hexdigest()
-        (root/'manifest.json').write_text(encode(manifest))
+        manifest=json.loads((root/'manifest.json').read_text(encoding='utf-8'));manifest['files']['SKILL.md']=hashlib.sha256(b'corrupted').hexdigest()
+        (root/'manifest.json').write_text(encode(manifest), encoding='utf-8')
         with self.assertRaisesRegex(ValueError,'SKILL_UNAVAILABLE'):resources(root)
     def test_inputs_and_unknowns(self):
         for change in [{'text':''},{'text':'x'*65537},{'data_kind':'wrong'},{'as_of':'2026-01-01'},{'text':'bad\ufffd'}]:
@@ -88,9 +88,9 @@ class LocalFlowTests(unittest.TestCase):
             fixture=server(0);threading.Thread(target=fixture.serve_forever,daemon=True).start()
             self.addCleanup(fixture.server_close);self.addCleanup(fixture.shutdown)
             config={'llm_url':'http://127.0.0.1:%d/v1/chat/completions'%fixture.server_port,'llm_model':MODEL}
-            (Path(directory)/'config.json').write_text(encode(config));process=None
+            (Path(directory)/'config.json').write_text(encode(config), encoding='utf-8');process=None
             def launch():
-                p=subprocess.Popen([sys.executable,'app.py','--no-browser','--port','0','--data-dir',directory],stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
+                p=subprocess.Popen([sys.executable,'app.py','--no-browser','--port','0','--data-dir',directory],stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True,encoding='utf-8')
                 line=p.stdout.readline().strip();self.assertTrue(line.startswith('JoyWorkflow: '),line)
                 url=line.removeprefix('JoyWorkflow: ')
                 with urlopen(url+'/skill') as r:html=r.read().decode()
@@ -133,7 +133,7 @@ class LocalFlowTests(unittest.TestCase):
                 self.assertEqual(call('skill-runs?id='+first['id'])['state'],'COMPLETED')
                 self.assertEqual(len(call('skill-runs')['runs']),3);self.assertEqual(fixture.calls,2)
                 call('config',{'llm_key':'testing-only'});call('config',{'clear':['llm_key']})
-                self.assertNotIn('llm_key',json.loads((Path(directory)/'config.json').read_text()))
+                self.assertNotIn('llm_key',json.loads((Path(directory)/'config.json').read_text(encoding='utf-8')))
                 with self.assertRaises(HTTPError):call('run',{'observed':'2999-01-01'})
                 self.assertFalse(call('skill-info')['busy'])
             finally:

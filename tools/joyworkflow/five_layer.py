@@ -86,7 +86,7 @@ class Evidence:
 
 def run_five(snapshot,config,manager,get_history,progress,resources=None):
     book=RuleBook(config)
-    as_of=snapshot['as_of'];cutoff=timestamp();e=Evidence(manager,as_of,cutoff,resources);p=config['params'];spec=json.loads(SPEC.read_text())
+    as_of=snapshot['as_of'];cutoff=timestamp();e=Evidence(manager,as_of,cutoff,resources);p=config['params'];spec=json.loads(SPEC.read_text(encoding='utf-8'))
     opens,calendar_ok,calendar_meta=e.calendar()
     registry=e.get('registry','sse-szse',src.security_registry)
     benchmark=e.get('index','000300',lambda:src.benchmark(as_of),ttl=6*3600)

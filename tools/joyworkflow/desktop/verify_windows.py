@@ -29,7 +29,7 @@ def main():
     with tempfile.TemporaryDirectory(prefix='joy Windows ') as temp:
         base=Path(temp)/'中文 解压目录';base.mkdir()
         with zipfile.ZipFile(archive) as z:z.extractall(base)
-        exe=base/'JoyWorkflow-Windows/JoyWorkflow.exe';env=dict(os.environ,PATH=str(Path(os.environ['SystemRoot'])/'System32')+';'+os.environ['SystemRoot'],PYINSTALLER_RESET_ENVIRONMENT='1');env.pop('PYTHONHOME',None);env.pop('PYTHONPATH',None)
+        exe=base/'JoyWorkflow-Windows/JoyWorkflow.exe';env=dict(os.environ,PATH=str(Path(os.environ['SystemRoot'])/'System32')+';'+os.environ['SystemRoot'],PYINSTALLER_RESET_ENVIRONMENT='1');env.pop('PYTHONHOME',None);env.pop('PYTHONPATH',None);env.pop('PYTHONUTF8',None)
         assert shutil.which('python',path=env['PATH']) is None
         root=base/'中文 数据';check=base/'check.json'
         subprocess.run([str(exe),'--self-check','--check-output',str(check),'--data-dir',str(root)],env=env,check=True,timeout=40)

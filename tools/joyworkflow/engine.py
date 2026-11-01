@@ -1,4 +1,5 @@
 """Portable, append-only forward observation workflow. Python 3.9+, stdlib only."""
+from contextlib import contextmanager,closing
 import csv
 import hashlib
 import io
@@ -84,10 +85,15 @@ class Store:
                     BEGIN SELECT RAISE(ABORT,'batch is immutable'); END;
             ''')
 
+    @contextmanager
     def connect(self):
         db = sqlite3.connect(self.path, timeout=30)
-        db.row_factory = sqlite3.Row
-        return db
+        try:
+            db.row_factory = sqlite3.Row
+            with db:
+                yield db
+        finally:
+            db.close()
 
     def recover(self):
         with self.connect() as db:
@@ -281,7 +287,7 @@ class Store:
         folder = self.root / "backups"
         folder.mkdir(exist_ok=True)
         path = folder / ("workflow-" + datetime.now().strftime("%Y%m%d-%H%M%S-") + uuid.uuid4().hex[:6] + ".sqlite3")
-        with self.connect() as db, sqlite3.connect(path) as target:
+        with self.connect() as db, closing(sqlite3.connect(path)) as target:
             db.backup(target)
         return str(path)
 

@@ -6,7 +6,7 @@ from urllib.parse import urlsplit
 
 def existing_session(root):
     try:
-        state=json.loads((root/'desktop-session.json').read_text())
+        state=json.loads((root/'desktop-session.json').read_text(encoding='utf-8'))
         u=urlsplit(state['url'])
         if u.scheme!='http' or u.hostname!='127.0.0.1' or not u.port:return None
         with build_opener(ProxyHandler({})).open(state['url']+'/api/desktop-health',timeout=2) as response:
@@ -43,12 +43,12 @@ def main():
     instance=os.urandom(16).hex();state_path=root/'desktop-session.json'
     def ready(url):
         state=dict(url=url,pid=os.getpid(),instance=instance,version=VERSION,data_dir=str(root),packaged=bool(getattr(sys,'frozen',False)))
-        tmp=state_path.with_suffix('.tmp');tmp.write_text(json.dumps(state));tmp.chmod(0o600);tmp.replace(state_path)
+        tmp=state_path.with_suffix('.tmp');tmp.write_text(json.dumps(state), encoding='utf-8');tmp.chmod(0o600);tmp.replace(state_path)
     stopped=threading.Event();finished=threading.Event()
     def watch_stop():
         while not finished.wait(.25):
             try:
-                if json.loads((root/'desktop-stop.json').read_text()).get('instance')==instance:stopped.set();return
+                if json.loads((root/'desktop-stop.json').read_text(encoding='utf-8')).get('instance')==instance:stopped.set();return
             except (OSError,ValueError):pass
     threading.Thread(target=watch_stop,daemon=True).start()
     def terminate(*unused):raise KeyboardInterrupt()
@@ -60,10 +60,10 @@ def main():
         finished.set()
         try:
             stop=root/'desktop-stop.json'
-            if json.loads(stop.read_text()).get('instance')==instance:stop.unlink()
+            if json.loads(stop.read_text(encoding='utf-8')).get('instance')==instance:stop.unlink()
         except (OSError,ValueError):pass
         try:
-            if json.loads(state_path.read_text()).get('pid')==os.getpid():state_path.unlink()
+            if json.loads(state_path.read_text(encoding='utf-8')).get('pid')==os.getpid():state_path.unlink()
         except (OSError,ValueError):pass
     return 0
 if __name__=='__main__':sys.exit(main())

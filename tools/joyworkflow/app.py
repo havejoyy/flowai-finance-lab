@@ -297,6 +297,9 @@ def serve(store, port=8766, browser=True, on_ready=None, desktop_instance=None, 
 
 
 def main():
+    # CLI output is UTF-8 on Windows as well as Unix; desktop logs already are.
+    for stream in (sys.stdout,sys.stderr):
+        if stream is not None and hasattr(stream,'reconfigure'):stream.reconfigure(encoding='utf-8',errors='backslashreplace')
     parser = argparse.ArgumentParser()
     parser.add_argument('--data-dir', type=Path, default=default_root())
     parser.add_argument('--port', type=int, default=8766)

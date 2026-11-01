@@ -149,7 +149,7 @@ class EngineTests(unittest.TestCase):
 class HTTPTests(unittest.TestCase):
     def test_http_security_and_demo(self):
         with tempfile.TemporaryDirectory() as root:
-            process=subprocess.Popen([sys.executable,'app.py','--no-browser','--port','0','--data-dir',root],stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
+            process=subprocess.Popen([sys.executable,'app.py','--no-browser','--port','0','--data-dir',root],stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True,encoding='utf-8')
             try:
                 line=process.stdout.readline().strip()
                 url=line.removeprefix('JoyWorkflow: ')
