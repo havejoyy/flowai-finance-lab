@@ -10,7 +10,7 @@ import uuid
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
-VERSION = "0.5.0-desktop"
+VERSION = "0.5.1-desktop"
 CN = timezone(timedelta(hours=8))
 
 

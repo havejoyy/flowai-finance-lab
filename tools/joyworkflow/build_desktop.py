@@ -31,13 +31,13 @@ def main():
     shutil.copytree(work/'frozen/JoyWorkflowEngine',res/'engine',symlinks=True)
     cache=work/'swift-cache';cache.mkdir(exist_ok=True)
     subprocess.run(['swiftc','-swift-version','5','-O','-target','arm64-apple-macosx13.0','-module-cache-path',str(cache),str(ROOT/'desktop/JoyWorkflow.swift'),'-o',str(mac/'JoyWorkflow')],check=True)
-    info=dict(CFBundleName='JoyWorkflow',CFBundleDisplayName='JoyWorkflow',CFBundleExecutable='JoyWorkflow',CFBundleIdentifier='com.flowailab.joyworkflow',CFBundlePackageType='APPL',CFBundleShortVersionString='0.5.0',CFBundleVersion='500',LSMinimumSystemVersion='13.0',NSHighResolutionCapable=True,NSAppTransportSecurity=dict(NSAllowsLocalNetworking=True),NSHumanReadableCopyright='JoyWorkflow · FlowAILab')
+    info=dict(CFBundleName='JoyWorkflow',CFBundleDisplayName='JoyWorkflow',CFBundleExecutable='JoyWorkflow',CFBundleIdentifier='com.flowailab.joyworkflow',CFBundlePackageType='APPL',CFBundleShortVersionString='0.5.1',CFBundleVersion='501',LSMinimumSystemVersion='13.0',NSHighResolutionCapable=True,NSAppTransportSecurity=dict(NSAllowsLocalNetworking=True),NSHumanReadableCopyright='JoyWorkflow · FlowAILab')
     (app/'Contents/Info.plist').write_bytes(plistlib.dumps(info))
     (res/'第三方组件说明.txt').write_text('CPython: Python Software Foundation License, https://www.python.org/psf/license/\nPyInstaller: GPL with bootloader exception, https://pyinstaller.org/en/stable/license.html\ncertifi CA bundle: Mozilla Public License 2.0, https://github.com/certifi/python-certifi\nApple AppKit / WebKit: system frameworks.\n')
-    (res/'使用说明.txt').write_text('JoyWorkflow 0.5.0 · macOS Apple Silicon\n\n双击 JoyWorkflow.app，无需安装Python。可拖到“应用程序”文件夹。\n本地资料保存在 ~/Library/Application Support/JoyWorkflow，替换应用不会覆盖资料。\n选策略并运行时自动联网取数、校验和有限重试；失败或缺口会显示，不使用示例替代。\n关闭应用同时停止本机服务，运行中退出的任务会在下次启动标为中断。\n菜单可打开数据文件夹与启动日志。\n本构建为本地ad-hoc签名，尚未进行Apple Developer ID签名与公证；未验证其他Mac首开体验。\n')
+    (res/'使用说明.txt').write_text('JoyWorkflow 0.5.1 · macOS Apple Silicon\n\n双击 JoyWorkflow.app，无需安装Python。可拖到“应用程序”文件夹。\n本地资料保存在 ~/Library/Application Support/JoyWorkflow，替换应用不会覆盖资料。\n选策略并运行时自动联网取数、校验和有限重试；失败或缺口会显示，不使用示例替代。\n关闭应用同时停止本机服务，运行中退出的任务会在下次启动标为中断。\n菜单可打开数据文件夹与启动日志。\n本构建为本地ad-hoc签名，尚未进行Apple Developer ID签名与公证；未验证其他Mac首开体验。\n')
     subprocess.run(['codesign','--force','--deep','--sign','-',str(app)],check=True)
     subprocess.run(['codesign','--verify','--deep','--strict',str(app)],check=True)
-    archive=out/'JoyWorkflow-macOS-AppleSilicon-0.5.0.zip'
+    archive=out/'JoyWorkflow-macOS-AppleSilicon-0.5.1.zip'
     if archive.exists():archive.unlink()
     subprocess.run(['ditto','-c','-k','--sequesterRsrc','--keepParent',str(app),str(archive)],check=True)
     sha=hashlib.sha256(archive.read_bytes()).hexdigest();archive.with_suffix('.zip.sha256').write_text(sha+'  '+archive.name+'\n')

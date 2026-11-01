@@ -12,7 +12,7 @@ def main():
     resources()  # Do not package missing or modified Skill resources.
     destination = root / 'dist'
     destination.mkdir(exist_ok=True)
-    path = destination / 'JoyWorkflow-local-0.5.0-source.zip'
+    path = destination / 'JoyWorkflow-local-0.5.1-source.zip'
     with zipfile.ZipFile(path, 'w', zipfile.ZIP_DEFLATED) as archive:
         for name in FILES:
             data = (root / name).read_bytes()

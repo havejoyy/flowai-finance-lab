@@ -1,0 +1,38 @@
+name: Build Windows portable
+on:
+  push:
+    branches: [codex/windows-portable-0.5.1]
+    paths: ['tools/joyworkflow/**', '.github/workflows/joyworkflow-windows.yml']
+  pull_request:
+    paths: ['tools/joyworkflow/**', '.github/workflows/joyworkflow-windows.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 25
+    defaults:
+      run:
+        working-directory: tools/joyworkflow
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          architecture: 'x64'
+      - name: Install build dependencies
+        run: python -m pip install -r desktop/windows-build-requirements.txt
+      - name: Test shared engine and recovery contracts
+        run: python -m unittest discover -p 'test_*.py' -v
+      - name: Build portable exe
+        run: python build_windows.py
+      - name: Real executable, restart and public market verification
+        run: python desktop/verify_windows.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: JoyWorkflow-Windows-x64-0.5.1
+          path: tools/joyworkflow/dist/windows/*
+          if-no-files-found: ignore
