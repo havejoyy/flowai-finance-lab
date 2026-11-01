@@ -2,6 +2,7 @@
 import hashlib,json,os,shutil,sqlite3,subprocess,sys,tempfile,time,uuid,zipfile
 from pathlib import Path
 from urllib.request import Request,build_opener,ProxyHandler
+from urllib.error import HTTPError
 ROOT=Path(__file__).resolve().parents[1]
 OUT=ROOT/'dist/windows';OPENER=build_opener(ProxyHandler({}))
 def read_json(path):
@@ -41,8 +42,10 @@ def main():
             assert '获取数据并运行筛选' in html;token=html.split("token='")[1].split("'")[0]
             def call(path,data=None):
                 raw=json.dumps(data,ensure_ascii=False).encode('utf-8') if data is not None else None
-                with OPENER.open(Request(url+'/api/'+path,data=raw,headers={'Content-Type':'application/json','X-Workflow-Token':token}),timeout=30) as r:return json.load(r)
-            strategy=call('screen-strategies',dict(template='volume',name='Windows公开行情验收',params=dict(min_amount=5,min_pct=0,volume_ratio=1,max_check=5)))
+                try:
+                    with OPENER.open(Request(url+'/api/'+path,data=raw,headers={'Content-Type':'application/json','X-Workflow-Token':token}),timeout=30) as r:return json.load(r)
+                except HTTPError as exc:raise AssertionError(str(exc.code)+' '+exc.read().decode('utf-8')) from exc
+            strategy=call('screen-strategies',dict(template='volume',name='Windows公开行情验收',params=dict(min_amount=5,min_pct=0,volume_ratio=1,max_check=10)))
             run=call('screen-runs',dict(template='volume',saved_id=strategy['id'],mode='live',request_id=str(uuid.uuid4())))
             deadline=time.monotonic()+600
             while time.monotonic()<deadline:
