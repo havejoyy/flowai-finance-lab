@@ -1,8 +1,8 @@
 """Portable launcher contracts tested without requiring native GUI on other OSes."""
 import json,sys,tempfile,unittest,sqlite3
 from pathlib import Path
-from unittest.mock import patch
-from windows_launcher import engine_command,request_stop
+from unittest.mock import patch,Mock
+from windows_launcher import engine_command,request_stop,owns_service
 
 class PortableTests(unittest.TestCase):
     def test_sqlite_context_commits_rolls_back_and_releases_handle(self):
@@ -19,6 +19,13 @@ class PortableTests(unittest.TestCase):
             with store.connect() as connection:self.assertEqual(connection.execute('SELECT COUNT(*) FROM close_probe').fetchone()[0],1)
             # Windows rejects this rename when a connection is still open.
             renamed=Path(tmp)/'renamed.sqlite3';store.path.rename(renamed);renamed.rename(store.path)
+
+    def test_controller_never_stops_another_process_service(self):
+        process=Mock(pid=12);process.poll.return_value=None
+        self.assertTrue(owns_service(process,{'pid':12}))
+        self.assertFalse(owns_service(process,{'pid':13}))
+        process.poll.return_value=0
+        self.assertFalse(owns_service(process,{'pid':12}));self.assertFalse(owns_service(None,{'pid':12}))
 
     def test_frozen_launch_uses_own_executable_and_no_host_python(self):
         with patch.object(sys,'frozen',True,create=True),patch.object(sys,'executable',r'C:\研究工具\JoyWorkflow.exe'):

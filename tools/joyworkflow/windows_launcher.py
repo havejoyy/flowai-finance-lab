@@ -12,6 +12,9 @@ def request_stop(root,state):
     if not current or current['instance']!=state['instance']:return False
     temporary=root/'desktop-stop.tmp';temporary.write_text(json.dumps({'instance':state['instance']}),encoding='utf-8');temporary.replace(root/'desktop-stop.json');return True
 
+def owns_service(process,state):
+    return bool(process and state and process.poll() is None and state.get('pid')==process.pid)
+
 class Launcher:
     def __init__(self,window,root):
         import tkinter as tk
@@ -23,7 +26,7 @@ class Launcher:
         frame=ttk.Frame(window,padding=24);frame.pack(fill='both',expand=True)
         ttk.Label(frame,text='JoyWorkflow',font=('Segoe UI',20,'bold')).pack(anchor='w')
         self.status=tk.StringVar(value='正在启动本地数据服务…');ttk.Label(frame,textvariable=self.status,wraplength=510).pack(anchor='w',pady=(12,8))
-        ttk.Label(frame,text='关闭浏览器不会停止服务；退出此窗口才会停止。',font=('Segoe UI',10)).pack(anchor='w')
+        ttk.Label(frame,text='关闭浏览器不会停止服务；退出会停止本窗口启动的服务。',font=('Segoe UI',10)).pack(anchor='w')
         row=ttk.Frame(frame);row.pack(fill='x',pady=(20,8))
         self.open_button=ttk.Button(row,text='打开研究页面',command=self.open_page,state='disabled');self.open_button.pack(side='left',padx=(0,8))
         ttk.Button(row,text='数据文件夹',command=lambda:self.open_file(self.root)).pack(side='left',padx=(0,8))
@@ -52,7 +55,7 @@ class Launcher:
     def close(self):
         if self.closing:return
         from tkinter import messagebox
-        if self.process and self.state:
+        if owns_service(self.process,self.state):
             try:
                 from urllib.request import build_opener,ProxyHandler
                 with build_opener(ProxyHandler({})).open(self.state['url']+'/api/desktop-health',timeout=2) as r:busy=json.load(r).get('busy')

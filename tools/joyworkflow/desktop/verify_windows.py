@@ -46,7 +46,7 @@ def main():
                     with OPENER.open(Request(url+'/api/'+path,data=raw,headers={'Content-Type':'application/json','X-Workflow-Token':token}),timeout=30) as r:return json.load(r)
                 except HTTPError as exc:raise AssertionError(str(exc.code)+' '+exc.read().decode('utf-8')) from exc
             strategy=call('screen-strategies',dict(template='volume',name='Windows公开行情验收',params=dict(min_amount=5,min_pct=0,volume_ratio=1,max_check=10)))
-            run=call('screen-runs',dict(template='volume',saved_id=strategy['id'],mode='live',request_id=str(uuid.uuid4())))
+            run=call('screen-runs',dict(template='volume',name=strategy['name'],params=strategy['params'],indicators=strategy.get('indicators',[]),saved_id=strategy['id'],mode='live',request_id=str(uuid.uuid4())))
             deadline=time.monotonic()+600
             while time.monotonic()<deadline:
                 result=call('screen-runs?id='+run['id'])

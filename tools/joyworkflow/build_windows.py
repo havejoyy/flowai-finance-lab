@@ -40,6 +40,7 @@ def main():
     with zipfile.ZipFile(archive,'w',zipfile.ZIP_DEFLATED) as z:
         for p in files:z.write(p,Path('JoyWorkflow-Windows')/p.relative_to(package))
     sha=hashlib.sha256(archive.read_bytes()).hexdigest();archive.with_suffix('.zip.sha256').write_text(sha+'  '+archive.name+'\n',encoding='utf-8')
-    manifest=dict(version=VERSION,os='Windows',architecture='x64',python_runtime=sys.version.split()[0],python_required_on_user_machine=False,archive=archive.name,sha256=sha,signature='unsigned',private_data_included=False,self_check=result)
+    code_hashes={p.name:hashlib.sha256(p.read_text(encoding='utf-8').replace('\r\n','\n').encode('utf-8')).hexdigest() for p in ROOT.glob('*.py') if not p.name.startswith('test_')}
+    manifest=dict(code_hashes_utf8_lf=code_hashes,version=VERSION,os='Windows',architecture='x64',python_runtime=sys.version.split()[0],python_required_on_user_machine=False,archive=archive.name,sha256=sha,signature='unsigned',private_data_included=False,self_check=result)
     (out/'windows-build-manifest.json').write_text(json.dumps(manifest,ensure_ascii=False,indent=2),encoding='utf-8');print(json.dumps(manifest,ensure_ascii=False,indent=2))
 if __name__=='__main__':main()
