@@ -56,9 +56,11 @@ def main():
             proof['real_market']={k:export.get(k) for k in ('id','mode','state','message','model_used','data_state')};proof['real_market']['counts']=report.get('counts');proof['real_market']['as_of']=report.get('as_of');proof['real_market']['data_kind']=report.get('data_kind')
             # Save only an aggregate, no raw market cache or runtime session secrets.
             (OUT/'windows-verification.json').write_text(json.dumps(proof,ensure_ascii=False,indent=2),encoding='utf-8')
-            assert export['state'] in ('PARTIAL','COMPLETED'),export['message']
-            assert export['mode']=='live' and export['model_used'] is False and report['data_kind']=='real'
-            assert report['counts']['market']>1000 and report['counts']['checked']>0 and report['counts']['history_failed']<report['counts']['checked']
+            market_ok=export['state'] in ('PARTIAL','COMPLETED') and export['mode']=='live' and export['model_used'] is False and report.get('data_kind')=='real'
+            market_ok=bool(market_ok and report['counts']['market']>1000 and report['counts']['checked']>0 and report['counts']['history_failed']<report['counts']['checked'])
+            proof['real_market_success']=market_ok
+            if not market_ok:
+                proof['diagnostic']=(root/'desktop.log').read_text(encoding='utf-8')[-8000:].replace(str(root),'<test-data>')
             before=hashlib.sha256(json.dumps(export,sort_keys=True).encode()).hexdigest()
             stop(root,state,process)
             process=subprocess.Popen([str(exe),'--engine','--data-dir',str(root),'--port','0'],env=env);processes.append(process);state=wait_session(root,process);states.append((root,state));url=state['url']
@@ -77,5 +79,5 @@ def main():
                 if (folder/'desktop-session.json').exists():(folder/'desktop-stop.json').write_text(json.dumps({'instance':state['instance']}),encoding='utf-8')
             for p in processes:
                 if p.poll() is None:p.terminate();p.wait(timeout=15)
-    proof['success']=True;(OUT/'windows-verification.json').write_text(json.dumps(proof,ensure_ascii=False,indent=2),encoding='utf-8');print(json.dumps({k:proof[k] for k in ('success','restart_keeps_report','windowed_controller_starts_frozen_backend','archive_sha256')},ensure_ascii=False))
+    proof['success']=proof['real_market_success'];(OUT/'windows-verification.json').write_text(json.dumps(proof,ensure_ascii=False,indent=2),encoding='utf-8');print(json.dumps(proof,ensure_ascii=True,indent=2));assert proof['success'],'Actual public-market verification failed; diagnostic retained, no example substitution'
 if __name__=='__main__':main()
