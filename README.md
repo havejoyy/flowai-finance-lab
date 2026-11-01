@@ -4,11 +4,11 @@
 
 ## 本地桌面工具 · JoyWorkflow
 
-[下载 Mac Apple Silicon 应用](https://github.com/havejoyy/flowai-finance-lab/releases/download/joyworkflow-v0.5.0/JoyWorkflow-macOS-AppleSilicon-0.5.0.zip) · [使用说明与源码](tools/joyworkflow/) · [版本发布页](https://github.com/havejoyy/flowai-finance-lab/releases/tag/joyworkflow-v0.5.0)
+[Windows免Python便携版](https://github.com/havejoyy/flowai-finance-lab/releases/download/joyworkflow-v0.5.1/JoyWorkflow-Windows-x64-0.5.1.zip) · [Mac Apple Silicon应用](https://github.com/havejoyy/flowai-finance-lab/releases/download/joyworkflow-v0.5.0/JoyWorkflow-macOS-AppleSilicon-0.5.0.zip) · [教程与源码](tools/joyworkflow/) · [手机端方案](tools/joyworkflow/docs/手机端方案.md)
 
-选择模板或自定义五层指标，自动获取公开行情、校验和有限重试，生成可视化筛选报告，策略与数据保存在本地 SQLite。Mac 应用内置 Python，解压后双击；无需准备行情或 API Key。筛选由规则代码执行，不调用模型，不自动交易。
+选择模板或自定义五层指标，自动获取公开行情、校验和有限重试，生成可视化筛选报告，策略与数据保存在本地SQLite。两种桌面包均内置Python，解压后双击；无需准备行情或API Key，不调用模型，不自动交易。Windows启动器打开默认浏览器里的本地页面。
 
-适用 macOS 13+ / Apple Silicon。本版尚未完成 Apple Developer ID 签名与公证，跨机器首开未验收；Intel Mac / Windows 暂无安装包。完整范围、真实测试与缺失数据边界见 [工具 README](tools/joyworkflow/)。
+当前为预览版，Windows未Authenticode签名、Mac未Developer ID签名和公证。目标Windows10/11 x64、macOS13+ / Apple Silicon；验收范围与限制见[工具README](tools/joyworkflow/)。手机能力仍为方案，当前不开放局域网或公网访问。
 
 ## Skills
 

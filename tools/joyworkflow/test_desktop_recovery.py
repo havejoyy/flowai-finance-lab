@@ -52,6 +52,6 @@ class RecoveryTests(unittest.TestCase):
     def test_existing_session_rejects_non_local_url(self):
         from desktop_backend import existing_session
         with tempfile.TemporaryDirectory() as tmp:
-            p=Path(tmp);(p/'desktop-session.json').write_text(json.dumps({'url':'http://untrusted.example:99','instance':'x','pid':1}))
+            p=Path(tmp);(p/'desktop-session.json').write_text(json.dumps({'url':'http://untrusted.example:99','instance':'x','pid':1}), encoding='utf-8')
             self.assertIsNone(existing_session(p))
 if __name__=='__main__':unittest.main()

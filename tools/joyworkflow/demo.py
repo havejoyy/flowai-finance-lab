@@ -19,7 +19,7 @@ def main():
     args = parser.parse_args()
     args.data_dir.mkdir(parents=True, exist_ok=True)
     config_path = args.data_dir/'config.json'
-    old = json.loads(config_path.read_text()) if config_path.exists() else {}
+    old = json.loads(config_path.read_text(encoding='utf-8')) if config_path.exists() else {}
     if old and (old.get('llm_model') != MODEL or old.get('llm_key') or old.get('tushare_token')):
         raise SystemExit('该目录已有非模拟配置，请改用新的 --data-dir；没有覆盖配置。')
     # Lock before writing config: never reconfigure another active demo instance.

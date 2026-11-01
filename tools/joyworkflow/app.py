@@ -52,7 +52,7 @@ def default_root():
     return Path.home() / '.local/share/JoyWorkflow'
 
 
-def serve(store, port=8766, browser=True, on_ready=None, desktop_instance=None):
+def serve(store, port=8766, browser=True, on_ready=None, desktop_instance=None, shutdown_event=None):
     token = secrets.token_urlsafe(32)
     lock = threading.Lock()
     config_path = store.root / 'config.json'
@@ -284,6 +284,8 @@ def serve(store, port=8766, browser=True, on_ready=None, desktop_instance=None):
     url = 'http://127.0.0.1:' + str(server.server_port)
     print('JoyWorkflow: ' + url + '\n数据目录: ' + str(store.root), flush=True)
     if on_ready:on_ready(url)
+    if shutdown_event is not None:
+        threading.Thread(target=lambda:(shutdown_event.wait(),server.shutdown()),daemon=True).start()
     if browser:
         webbrowser.open(url)
     try:
@@ -295,6 +297,9 @@ def serve(store, port=8766, browser=True, on_ready=None, desktop_instance=None):
 
 
 def main():
+    # CLI output is UTF-8 on Windows as well as Unix; desktop logs already are.
+    for stream in (sys.stdout,sys.stderr):
+        if stream is not None and hasattr(stream,'reconfigure'):stream.reconfigure(encoding='utf-8',errors='backslashreplace')
     parser = argparse.ArgumentParser()
     parser.add_argument('--data-dir', type=Path, default=default_root())
     parser.add_argument('--port', type=int, default=8766)

@@ -4,20 +4,25 @@
 
 ## 下载即用
 
-**[下载 Mac Apple Silicon 应用包（0.5.0）](https://github.com/havejoyy/flowai-finance-lab/releases/download/joyworkflow-v0.5.0/JoyWorkflow-macOS-AppleSilicon-0.5.0.zip)** · [版本说明与校验文件](https://github.com/havejoyy/flowai-finance-lab/releases/tag/joyworkflow-v0.5.0) · [完整使用说明](docs/桌面应用使用说明.md)
+| 平台 | 下载 | 启动 |
+|---|---|---|
+| Windows x64 0.5.1 | [便携版 ZIP](https://github.com/havejoyy/flowai-finance-lab/releases/download/joyworkflow-v0.5.1/JoyWorkflow-Windows-x64-0.5.1.zip) | 完整解压，双击 `JoyWorkflow.exe` |
+| Mac Apple Silicon 0.5.0 | [应用 ZIP](https://github.com/havejoyy/flowai-finance-lab/releases/download/joyworkflow-v0.5.0/JoyWorkflow-macOS-AppleSilicon-0.5.0.zip) | 解压，双击 `JoyWorkflow.app` |
 
-适用 macOS 13+、Apple Silicon（M系列）；内置 Python 与 SQLite，无需安装 Python、Node、数据库，也不需要准备数据或行情 API Key。
+两种应用均内置 Python 和 SQLite，不需安装 Python、Node、数据库，也不需要自己准备行情或 API Key。[Windows版本页](https://github.com/havejoyy/flowai-finance-lab/releases/tag/joyworkflow-v0.5.1) · [桌面使用说明](docs/桌面应用使用说明.md) · [手机端方案](docs/手机端方案.md)。
 
-当前为 **本地预览版**：ad-hoc 签名，未完成 Developer ID 签名和 Apple 公证；只在开发者的 arm64 Mac 验证，未验证另一台 Mac 首开、Intel Mac 或 Windows。系统拦截时请等待后续签名版本，不要求关闭安全校验。
+Windows便携版启动后自动在默认浏览器打开本机研究页面，启动器提供重新打开、数据文件夹、日志和退出入口。必须保留 `_internal` 文件夹；不要直接在ZIP里运行，也不要只复制exe。关闭网页不会停止服务，退出启动器才会停止。
+
+Windows目标平台为Windows 10/11 x64，自动化验收使用GitHub Windows x64 runner；普通用户机器的人工首开尚未验证。Mac要求macOS 13+ / M系列。当前均为预览版：Windows未进行Authenticode签名，Mac尚未Developer ID签名和公证；不能保证所有机器首开无系统提示，不要求关闭安全校验。Windows ARM、Intel Mac、原生手机App暂无安装包。
 
 ## 四步使用
 
-1. 解压，双击 `JoyWorkflow.app`。也可先拖到“应用程序”。
+1. 启动对应平台应用，等待本地页面就绪。
 2. 选择“放量走强”“弱转强观察”“板块共振”或“游资五层共振·放量突破”；需要修改时进入“我的策略”。
 3. 在五层指标库添加指标、调整阈值、保存版本，点击“获取数据并运行筛选”。
 4. 在“历史筛选”阅读入选股票的实际值与阈值，并查看未核验范围、缺失原因、日期和数据来源；可导出完整记录。
 
-“本地数据”按资料分类展示 SQLite 表格。相同策略版本已运行时，可回看旧报告或重新执行。
+“本地数据”按资料分类展示SQLite表格。相同策略版本已运行时，可回看旧报告或重新执行。
 
 ## 五层框架如何落地
 
@@ -37,9 +42,9 @@
 
 断线、超时和服务端暂时异常执行有限重试；日期、结构和证书失败明确显示原因。缺失不能按零值、旧日或示例补齐。“重试缺失数据”新建关联任务，保留原报告。公开接口可用性不受本项目控制，网络恢复不意味着缺失一定消失。
 
-默认数据目录：`~/Library/Application Support/JoyWorkflow/`；可用原生菜单切换到已有 SQLite 所在文件夹。资料不随更新应用覆盖，也不上传到作者服务器。运行筛选需要联网，关闭应用停止取数，无每日后台更新承诺。
+默认数据目录：Windows为 `%LOCALAPPDATA%\JoyWorkflow`，Mac为 `~/Library/Application Support/JoyWorkflow/`。Mac可用原生菜单切换SQLite目录；Windows启动器也支持 `--data-dir` 指定目录。资料不随更新应用覆盖，也不上传到作者服务器。运行筛选需要联网，关闭应用停止取数，无每日后台更新承诺。
 
-## 已完成验证
+## 验证范围
 
 2026-10-31 在打包应用中用 **2026-10-30** 真实行情完成流程：4,984 只有效证券，初筛135只，按验收配置核验10只，2只满足全部条件、8只不符；另125只未核验、5只合资格行情缺口单列。51项五层资料复用49项、联网补齐2项，个股历史复用10只。
 
@@ -54,6 +59,14 @@ python3 app.py --data-dir ./data
 ```
 
 源码要求 Python 3.9+，标准库即可运行研究页面（桌面构建另需打包依赖）。终端会显示本机页面地址；这是开发者路径，普通 Mac 用户使用上面的应用包。
+
+在Windows x64开发环境构建（终端需Python 3.12、OpenSSL；用户端无需）：
+
+```powershell
+python -m pip install -r desktop/windows-build-requirements.txt
+python build_windows.py
+python desktop/verify_windows.py
+```
 
 在 Apple Silicon Mac 上构建桌面包：
 
