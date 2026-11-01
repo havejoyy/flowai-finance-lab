@@ -1,0 +1,326 @@
+{
+  "id": "youzi-five-layer-breakout-v1",
+  "name": "游资五层共振·放量突破 V1",
+  "status": "implemented",
+  "executable": true,
+  "created": "2026-10-31",
+  "rule_version": "youzi-five-layer-v1.0.0-draft",
+  "purpose": "沪深A股收盘研究：市场环境、行业联动、代表性候选、价格结构、风险约束；不复刻任何人的真实策略。",
+  "scope": {
+    "exchange": [
+      "SSE",
+      "SZSE"
+    ],
+    "security_type": "A-share",
+    "benchmark": "沪深300价格指数",
+    "industry": "申万一级行业2021版当前分类",
+    "price_as_of": "T收盘",
+    "information_cutoff": "本次运行实际时间；单独留档",
+    "historical_backtest_supported": false
+  },
+  "defaults": {
+    "quote_coverage_min": 0.98,
+    "industry_quote_coverage_min": 0.95,
+    "listing_sessions_min": 120,
+    "candidate_history_max": 120,
+    "industry_min_members": 10,
+    "calendar_required": true,
+    "ohlc_observations_min": 61,
+    "model_required": false,
+    "user_files_required": false,
+    "user_api_key_required": false,
+    "auto_trade": false
+  },
+  "layers": [
+    {
+      "id": "L1",
+      "name": "市场环境",
+      "all_required": true,
+      "rules": [
+        {
+          "id": "M1",
+          "metric": "breadth",
+          "formula": "上涨家数/本轮合资格同日有效证券数",
+          "op": ">=",
+          "threshold": 0.4
+        },
+        {
+          "id": "M2",
+          "metric": "limit_down_ratio",
+          "formula": "同一合资格范围跌停家数/有效证券数",
+          "op": "<=",
+          "threshold": 0.01
+        },
+        {
+          "id": "M3",
+          "metric": "broken_limit_ratio",
+          "formula": "炸板未封住股票数/(收盘涨停股票数+炸板未封住股票数)，证券去重、同范围、同T",
+          "op": "<=",
+          "threshold": 0.45,
+          "empty_denominator": "无触板样本，记不适用；L2涨停联动规则仍不会通过"
+        },
+        {
+          "id": "M4",
+          "metric": "previous_limit_up_feedback",
+          "formula": "T-1收盘涨停集合在T日实际涨幅中位数；不是涨停次日开盘价收益",
+          "op": ">=",
+          "threshold_pct": -1,
+          "empty_sample": "官方/完整来源确认空集才为不适用；获取失败为待核验"
+        }
+      ],
+      "context_metrics": [
+        "上涨/下跌/平盘数",
+        "同日成交额",
+        "涨停/跌停数",
+        "连板高度与2板以上数量",
+        "沪深300相对MA20",
+        "昨日涨停样本数与T日报价覆盖率"
+      ],
+      "feedback_quote_coverage_min": 0.98,
+      "feedback_scope": "保存T-1原始全样本；T日已确认停牌单列，不补零。有效报价覆盖率分母为确认T可交易的原始样本；未知状态仍计缺失。"
+    },
+    {
+      "id": "L2",
+      "name": "行业共振（主线代理）",
+      "all_required": true,
+      "rules": [
+        {
+          "id": "S1",
+          "metric": "sector_mean_return_rank",
+          "formula": "本轮各行业有效成员当日原始涨幅等权均值降序排名",
+          "op": "<=",
+          "threshold": "ceil(行业总数*0.20)",
+          "tie_policy": "竞赛排名；并列同名次，不按名称破同分"
+        },
+        {
+          "id": "S2",
+          "metric": "sector_breadth",
+          "formula": "行业上涨家数/行业同日有效成员数",
+          "op": ">=",
+          "threshold": 0.55
+        },
+        {
+          "id": "S3",
+          "metric": "sector_limit_up_count",
+          "formula": "同日涨停集合按统一申万分类映射后的行业成员数",
+          "op": ">=",
+          "threshold": 2
+        },
+        {
+          "id": "S4",
+          "metric": "sector_5d_excess",
+          "formula": "申万行业指数5个交易日价格收益-沪深300同区间价格收益",
+          "op": ">=",
+          "threshold_percentage_points": 1
+        },
+        {
+          "id": "S5",
+          "metric": "sector_positive_days",
+          "formula": "申万行业指数最近5个交易日正收益天数",
+          "op": ">=",
+          "threshold": 3
+        }
+      ],
+      "not_claimed": [
+        "真实题材驱动",
+        "产业逻辑已成立",
+        "未来持续性"
+      ],
+      "full_catalog_required_for_rank": true
+    },
+    {
+      "id": "L3",
+      "name": "行业内活跃代表（龙头代理）",
+      "all_required": true,
+      "rules": [
+        {
+          "id": "C1",
+          "metric": "amount_today",
+          "op": ">=",
+          "threshold_yuan": 200000000
+        },
+        {
+          "id": "C2",
+          "metric": "amount_sector_rank",
+          "formula": "行业内同日有效成员成交额降序名次；并列按竞赛排名，不按代码制造差异",
+          "op": "<=",
+          "threshold": "max(1,ceil(行业有效成员数*0.20))"
+        },
+        {
+          "id": "C3",
+          "metric": "stock_sector_excess_5d",
+          "formula": "个股前复权收盘价5交易日收益-对应申万行业指数5交易日价格收益",
+          "op": ">=",
+          "threshold_percentage_points": 2
+        },
+        {
+          "id": "C4",
+          "metric": "trend",
+          "formula": "前复权C_T>MA20_T>MA60_T",
+          "op": "is",
+          "threshold": true
+        },
+        {
+          "id": "C5",
+          "metric": "normalized_daily_move",
+          "formula": "个股T日原始涨幅/该证券T日涨幅限制比例",
+          "op": ">=",
+          "threshold": 0.3
+        }
+      ],
+      "not_claimed": [
+        "资金来源为游资",
+        "价格领先证明因果带动",
+        "代表性等同龙头"
+      ]
+    },
+    {
+      "id": "L4",
+      "name": "价格结构与信号证据",
+      "all_required": true,
+      "rules": [
+        {
+          "id": "P1",
+          "metric": "breakout",
+          "formula": "C_T>max(H_{T-20},...,H_{T-1})；OHLC同一复权口径，窗口排除当日",
+          "op": "is",
+          "threshold": true
+        },
+        {
+          "id": "P2",
+          "metric": "amount_ratio_5",
+          "formula": "A_T/mean(A_{T-5},...,A_{T-1})；成交额不复权、不包含当日",
+          "op": ">=",
+          "threshold": 1.5
+        },
+        {
+          "id": "P3",
+          "metric": "close_location",
+          "formula": "(C_T-L_T)/(H_T-L_T)；H=L不做除法且不通过该结构",
+          "op": ">=",
+          "threshold": 0.7
+        }
+      ],
+      "personal_plan_evidence": "不适用：没有用户原计划；本层只核验客观结构，不输出买卖价格"
+    },
+    {
+      "id": "L5",
+      "name": "风险约束与规则纪律",
+      "all_required": true,
+      "rules": [
+        {
+          "id": "R1",
+          "metric": "security_status",
+          "formula": "非ST/退市标记、非停牌、上市交易日数>=120；由元数据及交易日历核对",
+          "op": "is",
+          "threshold": true,
+          "age_source": "真实上市日期与完整交易日历；不能使用行业计入日期或抓取历史长度代替"
+        },
+        {
+          "id": "R2",
+          "metric": "average_amount_20",
+          "formula": "最近20个交易日有效成交额均值，不以补零替代缺失",
+          "op": ">=",
+          "threshold_yuan": 100000000
+        },
+        {
+          "id": "R3",
+          "metric": "normalized_atr",
+          "formula": "(ATR14_T/C_T)/(T日涨幅限制比例)，ATR为简单平均TR，OHLC及前收同复权",
+          "op": "<=",
+          "threshold": 0.5
+        },
+        {
+          "id": "R4",
+          "metric": "ma20_extension",
+          "formula": "C_T/MA20_T-1",
+          "op": "<=",
+          "threshold": 0.12
+        },
+        {
+          "id": "R5",
+          "metric": "non_flat_range",
+          "formula": "原始H_T>L_T且成交额>0",
+          "op": "is",
+          "threshold": true
+        },
+        {
+          "id": "R6",
+          "metric": "announcement_screen",
+          "formula": "自动扫描最近5个交易日至信息截止时间的公告及覆盖其间周末的日历日期；标题及类别规则命中需复核。",
+          "op": "is",
+          "threshold": "窗口内标题扫描完整且未命中预设待复核类别；不代表无事件风险",
+          "keyword_hit": "待核验，不自动进入通过名单",
+          "provider_failure": "待核验",
+          "timestamp_missing": "当日只提供日期不能确认截止时间的公告记时间口径待核验"
+        }
+      ],
+      "personal_discipline": "不适用：无持仓、成本、订单、账户及行为记录，不评价个人纪律或集中度"
+    }
+  ],
+  "decision": {
+    "global_data_failure": "待核验，不生成全通过名单",
+    "hard_rule_failure": "不通过，保留实际值/阈值/原因",
+    "required_data_missing": "待核验，不补零、不重新分配权重",
+    "unsupported_capability": "未接入；不可标通过",
+    "fully_passed": "全部适用硬规则通过、必需数据齐备，进入研究候选",
+    "market_failed": "记录市场层结果与行业概况；不继续下载个股历史",
+    "no_matches": "0只符合；不自动放宽门槛",
+    "candidate_cap_exceeded": "默认最多核验120只；其余未核验单列，不能称全市场完成"
+  },
+  "ranking": {
+    "name": "候选内规则匹配排序分",
+    "only_fully_passed": true,
+    "weights": {
+      "sector_5d_excess_percentile": 30,
+      "stock_sector_excess_5d_percentile": 30,
+      "amount_ratio_5_percentile": 20,
+      "close_location_percentile": 20
+    },
+    "percentile": "(less_count+0.5*(equal_count-1))/(n-1)，同一已核验通过集合；n=1时不打分",
+    "meaning": "只表示在本轮通过集合内的相对排序，不是收益概率或买卖评级",
+    "missing": "不打分，不动态调整权重"
+  },
+  "optional_only": [
+    "换手率、流通市值（字段可用时展示，缺失不虚构）",
+    "龙虎榜（未上榜为不适用，不解释为无资金）",
+    "公告全文辅助阅读（非必需AI，不自动上传或付费）",
+    "首次/最后封板时间、封板资金（仅作已留档辅助说明）"
+  ],
+  "execution": {
+    "cache": "SQLite，先校验缓存后补取；公告每次运行更新至信息截止时间",
+    "source_switch": "先保持同一整批口径；历史备源须OHLC/复权因子/成交额校验一致；失败不拼旧日期冒充成功",
+    "freeze": "策略hash、数据批次、行情T与信息截止时间、目录/分类、全部初筛名单及结果留档",
+    "comparison_windows": [
+      1,
+      3,
+      5,
+      10
+    ],
+    "forward_evaluation": "从信息截止时间之后首个可交易时点起观察；区分候选价格变化和可成交模拟；当前来源不支持历史无偏回测"
+  },
+  "sources_reviewed": [
+    {
+      "url": "https://akshare.akfamily.xyz/data/stock/stock_quote.html#涨停股池",
+      "verified": "官方接口文档存在；近期数据，未做本轮网络稳定性实测"
+    },
+    {
+      "url": "https://akshare.akfamily.xyz/data/index/index.html#申万指数历史行情",
+      "verified": "官方接口文档包含申万行业指数历史OHLC；现有项目仅行业成分接入已实测"
+    },
+    {
+      "url": "https://akshare.akfamily.xyz/data/stock/stock_research.html#沪深京-a-股公告",
+      "verified": "官方接口文档存在；当日发布时间和分页完整性需适配核验"
+    },
+    {
+      "url": "https://akshare.akfamily.xyz/data/calendar/calendar.html",
+      "verified": "官方交易日历文档存在；仍须核对覆盖日期"
+    },
+    {
+      "url": "https://www.sse.com.cn/lawandrules/sselawsrules2025/fund/trading/c/c_20260424_10817739.shtml",
+      "verified": "交易所2026交易规则页面；涨跌停不能统一用固定9.9%判断"
+    }
+  ],
+  "validation_status": "已实现；参数未验证收益。真实数据与测试夹具验收分开保存。",
+  "market_limit_measurement": "腾讯同T实际限价、最高价、收盘价计算涨跌停/炸板；公开股池作交叉检查；无同日价格不替代。"
+}

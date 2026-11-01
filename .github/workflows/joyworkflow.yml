@@ -1,0 +1,21 @@
+name: Test JoyWorkflow
+on:
+  push:
+    branches: [main]
+    paths: ['tools/joyworkflow/**', '.github/workflows/joyworkflow.yml']
+  pull_request:
+    paths: ['tools/joyworkflow/**', '.github/workflows/joyworkflow.yml']
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: tools/joyworkflow
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python3 -m unittest discover -p 'test_*.py' -v

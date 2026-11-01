@@ -2,6 +2,14 @@
 
 面向中文用户的开源 AI 金融研究 Skill 集合。它们用于整理信息、检查证据和复盘决策过程，不提供荐股、收益承诺或自动交易。
 
+## 本地桌面工具 · JoyWorkflow
+
+[下载 Mac Apple Silicon 应用](https://github.com/havejoyy/flowai-finance-lab/releases/download/joyworkflow-v0.5.0/JoyWorkflow-macOS-AppleSilicon-0.5.0.zip) · [使用说明与源码](tools/joyworkflow/) · [版本发布页](https://github.com/havejoyy/flowai-finance-lab/releases/tag/joyworkflow-v0.5.0)
+
+选择模板或自定义五层指标，自动获取公开行情、校验和有限重试，生成可视化筛选报告，策略与数据保存在本地 SQLite。Mac 应用内置 Python，解压后双击；无需准备行情或 API Key。筛选由规则代码执行，不调用模型，不自动交易。
+
+适用 macOS 13+ / Apple Silicon。本版尚未完成 Apple Developer ID 签名与公证，跨机器首开未验收；Intel Mac / Windows 暂无安装包。完整范围、真实测试与缺失数据边界见 [工具 README](tools/joyworkflow/)。
+
 ## Skills
 
 | Skill | 用途 |
