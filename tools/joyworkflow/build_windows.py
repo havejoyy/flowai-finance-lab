@@ -3,7 +3,7 @@ import hashlib,json,os,platform,shutil,subprocess,sys,tempfile,zipfile
 from pathlib import Path
 from build_desktop import ASSETS
 ROOT=Path(__file__).resolve().parent
-VERSION='0.5.1'
+from release_version import VERSION
 def main():
     if sys.platform!='win32' or platform.machine().lower() not in ('amd64','x86_64'):raise SystemExit('Windows x64 原生构建环境必需；不交叉编译或伪装其他平台。')
     import certifi

@@ -6,10 +6,10 @@
 
 | 平台 | 下载 | 启动 |
 |---|---|---|
-| Windows x64 0.5.1 | [便携版 ZIP](https://github.com/havejoyy/flowai-finance-lab/releases/download/joyworkflow-v0.5.1/JoyWorkflow-Windows-x64-0.5.1.zip) | 完整解压，双击 `JoyWorkflow.exe` |
-| Mac Apple Silicon 0.5.0 | [应用 ZIP](https://github.com/havejoyy/flowai-finance-lab/releases/download/joyworkflow-v0.5.0/JoyWorkflow-macOS-AppleSilicon-0.5.0.zip) | 解压，双击 `JoyWorkflow.app` |
+| Windows x64 0.5.2 | [便携版 ZIP](https://github.com/havejoyy/flowai-finance-lab/releases/download/joyworkflow-v0.5.2/JoyWorkflow-Windows-x64-0.5.2.zip) | 完整解压，双击 `JoyWorkflow.exe` |
+| Mac Apple Silicon 0.5.2 | [应用 ZIP](https://github.com/havejoyy/flowai-finance-lab/releases/download/joyworkflow-v0.5.2/JoyWorkflow-macOS-AppleSilicon-0.5.2.zip) | 解压，双击 `JoyWorkflow.app` |
 
-两种应用均内置 Python 和 SQLite，不需安装 Python、Node、数据库，也不需要自己准备行情或 API Key。[Windows版本页](https://github.com/havejoyy/flowai-finance-lab/releases/tag/joyworkflow-v0.5.1) · [桌面使用说明](docs/桌面应用使用说明.md) · [手机端方案](docs/手机端方案.md)。
+两种应用均内置 Python 和 SQLite，不需安装 Python、Node、数据库，也不需要自己准备行情或 API Key。[Windows版本页](https://github.com/havejoyy/flowai-finance-lab/releases/tag/joyworkflow-v0.5.2) · [桌面使用说明](docs/桌面应用使用说明.md) · [手机端方案](docs/手机端方案.md)。
 
 Windows便携版启动后自动在默认浏览器打开本机研究页面，启动器提供重新打开、数据文件夹、日志和退出入口。必须保留 `_internal` 文件夹；不要直接在ZIP里运行，也不要只复制exe。关闭网页不会停止服务，退出启动器才会停止。
 
@@ -24,7 +24,7 @@ Windows目标平台为Windows 10/11 x64，自动化验收使用GitHub Windows x6
 
 “本地数据”按资料分类展示SQLite表格。相同策略版本已运行时，可回看旧报告或重新执行。
 
-当前源码中的报告现将来源证券数、基础规则排除数、同日有效证券数、存在数据缺口的股票数和最终入选数分开展示；缺口表按股票代码合并列出具体原因。初筛候选、已核验及未核验数量另列，公共资料缺口不计成股票数量。历史报告按原记录生成同口径展示，不改写原始报告；有效证券数不表示已完整筛选全市场。本项改动尚未包含在上述既有桌面下载包中。
+桌面版报告将来源证券数、基础规则排除数、同日有效证券数、存在数据缺口的股票数和最终入选数分开展示；缺口表按股票代码合并列出具体原因。初筛候选、已核验及未核验数量另列，公共资料缺口不计成股票数量。历史报告按原记录生成同口径展示，不改写原始报告；有效证券数不表示已完整筛选全市场。
 
 ## 五层框架如何落地
 
@@ -40,7 +40,7 @@ Windows目标平台为Windows 10/11 x64，自动化验收使用GitHub Windows x6
 
 ## 自动取数与缺失处理
 
-当前源码新增“本地数据 → 获取最新数据”：主动联网更新收盘快照与行业分类，校验后存入 SQLite，页面显示实际行情日期、进度和缺失原因。更新期间防止重复提交，刷新页面可继续查看任务；关闭服务后未完成任务标记为中断。个股历史日 K、指数等策略资料仍在运行筛选时按需补齐。本按钮尚未包含在上述已发布的桌面下载包中。
+桌面版提供“本地数据 → 获取最新数据”：主动联网更新收盘快照与行业分类，校验后存入 SQLite，页面显示实际行情日期、进度和缺失原因。更新期间防止重复提交，刷新页面可继续查看任务；关闭服务后未完成任务标记为中断。个股历史日 K、指数等策略资料仍在运行筛选时按需补齐。
 
 完整架构图、数据源对应表、缓存与 SQLite 流程见 [工具架构与数据获取](docs/工具架构与数据获取.md)。压缩包内置取数程序与运行环境，行情数据库在使用时自动建立；用户点击筛选时由自己的电脑直接请求公开数据服务。
 

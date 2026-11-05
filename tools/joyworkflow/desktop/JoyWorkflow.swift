@@ -129,7 +129,7 @@ final class DesktopDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, 
     @objc func openData(){NSWorkspace.shared.open(root)}
     @objc func openLog(){NSWorkspace.shared.open(root.appendingPathComponent("desktop.log"))}
     @objc func reloadPage(){web?.reload()}
-    @objc func about(){let a=NSAlert();a.messageText="JoyWorkflow 0.5.1";a.informativeText="本地策略研究工具 · 内置运行环境\n公开行情自动获取、校验与有限重试\n数据保存于：\(root.path)\n本构建适用于 Apple Silicon macOS。";a.runModal()}
+    @objc func about(){let a=NSAlert();a.messageText="JoyWorkflow " + (Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "");a.informativeText="本地策略研究工具 · 内置运行环境\n公开行情自动获取、校验与有限重试\n数据保存于：\(root.path)\n本构建适用于 Apple Silicon macOS。";a.runModal()}
 }
 let application=NSApplication.shared
 let delegate=DesktopDelegate()

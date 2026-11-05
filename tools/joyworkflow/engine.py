@@ -11,7 +11,8 @@ import uuid
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
-VERSION = "0.5.1-desktop"
+from release_version import VERSION as RELEASE_VERSION
+VERSION = RELEASE_VERSION + "-desktop"
 CN = timezone(timedelta(hours=8))
 
 
