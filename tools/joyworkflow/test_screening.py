@@ -210,10 +210,14 @@ class ScreeningHTTPTests(unittest.TestCase):
                     time.sleep(.05)
                 self.assertEqual(result['state'],'COMPLETED');self.assertNotIn('rows',result['snapshot']);self.assertNotIn('histories',result['report'])
                 export=call('screen-export?id='+item['id']);self.assertIn('rows',export['snapshot']);self.assertIn('histories',export['report'])
+                self.assertEqual(result['report']['data_scope'],export['report']['data_scope'])
+                self.assertEqual(result['report']['data_scope']['source'],result['report']['counts']['source'])
+                self.assertTrue(any('虚构示例' in n for n in result['report']['data_scope']['notes']))
                 self.assertEqual(export['strategy']['saved_version'],1)
                 with self.assertRaises(HTTPError):call('screen-runs',request(params={'max_check':999}))
                 process.terminate();process.communicate(timeout=5);process,url,token=launch()
                 self.assertEqual(call('screen-runs?id='+item['id'])['state'],'COMPLETED');self.assertEqual(len(call('screen-presets')['saved']),1)
+                self.assertEqual(call('screen-runs?id='+item['id'])['report']['data_scope'],export['report']['data_scope'])
             finally:
                 if process:process.terminate();process.communicate(timeout=5)
 

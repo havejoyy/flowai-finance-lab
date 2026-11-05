@@ -5,6 +5,7 @@ import math
 import statistics
 import threading
 from concurrent.futures import ThreadPoolExecutor,as_completed
+from report_scope import quote_gap_reason
 from datetime import datetime,timedelta
 from pathlib import Path
 from engine import CN,digest,timestamp
@@ -96,7 +97,7 @@ def run_five(snapshot,config,manager,get_history,progress,resources=None):
     excluded=[];unavailable=[];valid=[]
     for r in snapshot['rows']:
         if 'ST' in r['name'].upper() or '退' in r['name'] or (r['code'] in metadata and r['code'] not in eligible):excluded.append(dict(code=r['code'],name=r['name'],reason='ST/退市标记或上市不足120交易日'));continue
-        if not r.get('eod') or r.get('date')!=as_of or any(r.get(k) is None for k in ('close','pct','amount')) or (r.get('close') or 0)<=0 or (r.get('amount') or 0)<=0:unavailable.append(dict(code=r['code'],name=r['name'],reason='行情时点、价格或成交额待核验'));continue
+        if not r.get('eod') or r.get('date')!=as_of or any(r.get(k) is None for k in ('close','pct','amount')) or (r.get('close') or 0)<=0 or (r.get('amount') or 0)<=0:unavailable.append(dict(code=r['code'],name=r['name'],reason=quote_gap_reason(r,as_of) or '行情时点、价格或成交额待核验'));continue
         if r['code'] not in metadata:unavailable.append(dict(code=r['code'],name=r['name'],reason='交易所名录或上市日期待核验'));continue
         valid.append(r)
     meta_scope={r['code'] for r in snapshot['rows'] if 'ST' not in r['name'].upper() and '退' not in r['name']};registry_coverage=len(meta_scope&set(metadata))/len(meta_scope) if meta_scope else None
@@ -146,7 +147,7 @@ def run_five(snapshot,config,manager,get_history,progress,resources=None):
     layers=[dict(name=n,status='未进入',support=[],missing=[],refs=[],applicability='仅公开数据量化代理；不输出交易指令') for n in NAMES]
     layers[0].update(input_count=len(valid),passed_count=len(valid) if market_state=='通过' else 0 if market_state=='不通过' else None,status=market_state,support=['市场上涨占比 '+str(round(breadth,2) if breadth is not None else None)+'%；实际涨停 '+str(len(ups))+'，跌停 '+str(len(downs))+'，炸板未封 '+str(len(broken))+'。'],checks=market_checks,refs=['five_layer.market_checks'])
     report=dict(as_of=as_of,source=snapshot['source'],data_kind='real',market=market,sectors=sectors,industry_data=snapshot.get('industry_data'),counts=counts,evaluations=[],excluded=excluded,unavailable=unavailable,pre_rejected=[],deferred=[],failures={},histories={},layers=layers,limitations=limits_info,disclaimer='本工具只核验公开市场数据与研究规则，不构成个性化交易方案或收益承诺。')
-    five=dict(indicator_catalog_hash=digest(FIVE_INDICATORS),selected_rules=book.rows,custom_selection='five_rules' in config,version=config['rule_version'],spec_hash=digest(spec),information_cutoff=cutoff,price_as_of=as_of,market_checks=market_checks,sector_evaluations=[],sources=e.records,calendar=calendar_meta,pool_cross_check=checks_sources,coverage=dict(quotes=coverage,limit_quotes=limit_coverage,prior_limit_samples=len(prior),prior_quote_coverage=feedback_coverage,eligible_expected=len(eligible),quote_valid=len(valid),missing_eligible=[dict(code=c,name=metadata[c]['name'],reason='未在行情目录中' if c not in all_quotes else '收盘报价无效') for c in sorted(eligible-known)]),stages=[],ranking_definition='仅通过集合内：行业相对表现30%、个股相对行业30%、成交额倍数20%、收盘位置20%；不是上涨概率',original_framework_mapping=['市场量化环境','行业联动代理，非题材确认','成交活跃代表，非因果龙头','客观价格结构；个人交易设想不适用','市场风险约束；个人纪律不适用'])
+    five=dict(indicator_catalog_hash=digest(FIVE_INDICATORS),selected_rules=book.rows,custom_selection='five_rules' in config,version=config['rule_version'],spec_hash=digest(spec),information_cutoff=cutoff,price_as_of=as_of,market_checks=market_checks,sector_evaluations=[],sources=e.records,calendar=calendar_meta,pool_cross_check=checks_sources,coverage=dict(quotes=coverage,limit_quotes=limit_coverage,prior_limit_samples=len(prior),prior_quote_coverage=feedback_coverage,eligible_expected=len(eligible),quote_valid=len(valid),missing_eligible=[dict(code=c,name=metadata[c]['name'],reason='未在行情目录中' if c not in all_quotes else quote_gap_reason(all_quotes[c],as_of) or '收盘报价无效') for c in sorted(eligible-known)]),stages=[],ranking_definition='仅通过集合内：行业相对表现30%、个股相对行业30%、成交额倍数20%、收盘位置20%；不是上涨概率',original_framework_mapping=['市场量化环境','行业联动代理，非题材确认','成交活跃代表，非因果龙头','客观价格结构；个人交易设想不适用','市场风险约束；个人纪律不适用'])
     report['five_layer']=five
     def finish(summary):
         report['summary']=summary;five['sources']=copy.deepcopy(e.records);five['stages']=[dict(name=l['name'],status=l['status'],input_count=l.get('input_count'),passed_count=l.get('passed_count'),pending_count=l.get('pending_count')) for l in layers];
