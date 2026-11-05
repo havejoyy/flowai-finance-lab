@@ -26,7 +26,7 @@ def stop(folder,state,process):
     assert not (folder/'desktop-session.json').exists()
 
 def main():
-    assert sys.platform=='win32';archive=OUT/'JoyWorkflow-Windows-x64-0.5.1.zip';proof={'platform':sys.platform,'archive_sha256':hashlib.sha256(archive.read_bytes()).hexdigest(),'host_python_not_on_PATH':True}
+    assert sys.platform=='win32';archive,=OUT.glob('JoyWorkflow-Windows-x64-*.zip');proof={'platform':sys.platform,'archive_sha256':hashlib.sha256(archive.read_bytes()).hexdigest(),'host_python_not_on_PATH':True}
     with tempfile.TemporaryDirectory(prefix='joy Windows ') as temp:
         base=Path(temp)/'中文 解压目录';base.mkdir()
         with zipfile.ZipFile(archive) as z:z.extractall(base)

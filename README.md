@@ -4,11 +4,11 @@
 
 ## 本地桌面工具 · JoyWorkflow
 
-[Windows免Python便携版](https://github.com/havejoyy/flowai-finance-lab/releases/download/joyworkflow-v0.5.1/JoyWorkflow-Windows-x64-0.5.1.zip) · [Mac Apple Silicon应用](https://github.com/havejoyy/flowai-finance-lab/releases/download/joyworkflow-v0.5.0/JoyWorkflow-macOS-AppleSilicon-0.5.0.zip) · [教程与源码](tools/joyworkflow/) · [手机端方案](tools/joyworkflow/docs/手机端方案.md)
+[Windows免Python便携版](https://github.com/havejoyy/flowai-finance-lab/releases/download/joyworkflow-v0.5.2/JoyWorkflow-Windows-x64-0.5.2.zip) · [Mac Apple Silicon应用](https://github.com/havejoyy/flowai-finance-lab/releases/download/joyworkflow-v0.5.2/JoyWorkflow-macOS-AppleSilicon-0.5.2.zip) · [教程与源码](tools/joyworkflow/) · [手机端方案](tools/joyworkflow/docs/手机端方案.md)
 
 选择模板或自定义五层指标，自动获取公开行情、校验和有限重试，生成可视化筛选报告，策略与数据保存在本地SQLite。两种桌面包均内置Python，解压后双击；无需准备行情或API Key，不调用模型，不自动交易。Windows启动器打开默认浏览器里的本地页面。
 
-**源码更新（2026-11-05）：** 新增“本地数据 → 获取最新数据”按钮，可单独更新收盘快照与行业分类；报告将来源、排除、有效证券、数据缺口和入选数分开展示。已发布的 Windows 0.5.1 / Mac 0.5.0 下载包尚未包含这两项更新。[更新说明](tools/joyworkflow/docs/更新记录.md)。
+**双平台 0.5.2 更新：** 新增“本地数据 → 获取最新数据”按钮，可单独更新收盘快照与行业分类；报告将来源、排除、有效证券、数据缺口和入选数分开展示。Windows 和 Mac 0.5.2 下载包均包含这两项更新。[更新说明](tools/joyworkflow/docs/更新记录.md)。
 
 ### 下载前了解：数据从哪里来
 
