@@ -7,6 +7,7 @@ import copy
 import threading
 from datetime import datetime
 from market_store import MarketStore, validate_snapshot, validate_history
+from report_scope import quote_gap_reason
 from data_recovery import error_info
 from engine import CN
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -88,7 +89,7 @@ def analyze(snapshot, config, history_getter=fetch_history, progress=lambda msg:
             excluded.append(dict(code=s['code'],name=s['name'],reason='ST或退市标记'))
         elif (not s.get('eod') or s['date'] != as_of or any(s.get(k) is None for k in ('close','pct','amount'))
               or s['close'] <= 0 or s['amount'] <= 0):
-            unavailable.append(dict(code=s['code'],name=s['name'],reason='收盘时点、价格或成交额未取得有效值'))
+            unavailable.append(dict(code=s['code'],name=s['name'],reason=quote_gap_reason(s,as_of) or '收盘时点、价格或成交额未取得有效值'))
         else:
             usable.append(s)
     if not usable:

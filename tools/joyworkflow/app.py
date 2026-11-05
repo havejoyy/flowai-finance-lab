@@ -18,6 +18,8 @@ from screening import ScreeningStore, PRESETS, LIMITS
 from screening_indicators import INDICATORS
 from five_indicator_library import FIVE_INDICATORS, QUALITY_INDICATORS
 from market_store import MarketStore
+from report_scope import report_scope
+from data_update import DataUpdates
 
 
 @contextmanager
@@ -60,6 +62,8 @@ def serve(store, port=8766, browser=True, on_ready=None, desktop_instance=None, 
     skill_store.recover()
     screening_store = ScreeningStore(store)
     screening_store.recover()
+    data_updates = DataUpdates(store)
+    data_updates.recover()
 
     def config():
         return json.loads(config_path.read_text('utf-8')) if config_path.exists() else {}
@@ -80,6 +84,12 @@ def serve(store, port=8766, browser=True, on_ready=None, desktop_instance=None, 
     def screen_work(item):
         try:
             screening_store.execute(item)
+        finally:
+            lock.release()
+
+    def data_work(item):
+        try:
+            data_updates.execute(item)
         finally:
             lock.release()
 
@@ -119,6 +129,8 @@ def serve(store, port=8766, browser=True, on_ready=None, desktop_instance=None, 
                 return self.reply(html, mime='text/html; charset=utf-8')
             if parsed.path.startswith('/api/screen-'):
                 try:
+                    if parsed.path == '/api/screen-data-update':
+                        return self.reply({'update': data_updates.get(parse_qs(parsed.query).get('id', [''])[0])})
                     if parsed.path == '/api/screen-data-table':
                         params=parse_qs(parsed.query)
                         return self.reply(MarketStore(store).table(params.get('q',[''])[0],params.get('state',['all'])[0],params.get('page',['1'])[0],params.get('limit',['50'])[0],params.get('date',[''])[0],params.get('kind',['all'])[0]))
@@ -130,6 +142,8 @@ def serve(store, port=8766, browser=True, on_ready=None, desktop_instance=None, 
                         identifier = parse_qs(parsed.query).get('id',[''])[0]
                         if not identifier: return self.reply({'runs':screening_store.list()})
                         item = screening_store.get(identifier)
+                        if item.get('report'):
+                            item['report']['data_scope'] = report_scope(item)
                         if parsed.path != '/api/screen-export':
                             if 'snapshot' in item:
                                 item['snapshot'] = {k:v for k,v in item['snapshot'].items() if k not in ('rows','evidence')}
@@ -205,7 +219,12 @@ def serve(store, port=8766, browser=True, on_ready=None, desktop_instance=None, 
                     return self.reply({'error': '任务执行中，请稍后重试'}, 409)
                 background = False
                 try:
-                    if self.path == '/api/screen-strategies':
+                    if self.path == '/api/screen-data-update':
+                        item = data_updates.start()
+                        result = {'id': item['id'], 'state': item['state']}
+                        threading.Thread(target=data_work, args=(item,), daemon=True).start()
+                        background = True
+                    elif self.path == '/api/screen-strategies':
                         result = screening_store.save_strategy(data)
                     elif self.path == '/api/screen-runs':
                         item, started = screening_store.start(data)
