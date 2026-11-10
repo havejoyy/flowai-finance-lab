@@ -5,7 +5,7 @@ from engine import Store
 from screening import ScreeningStore,strategy,analyze,FIVE_ID
 from screening_data import demo_snapshot,demo_history
 from screening_indicators import indicator_checks
-from test_five_layer import fixture,CUTOFF
+from test_five_layer import fixture,CUTOFF,fixture_market_clock
 
 class CustomizationTests(unittest.TestCase):
     def test_validation_hash_and_saved_roundtrip(self):
@@ -37,7 +37,7 @@ class CustomizationTests(unittest.TestCase):
         snap,classification,histories,resources=fixture()
         with tempfile.TemporaryDirectory() as tmp:
             sc=ScreeningStore(Store(tmp));item,_=sc.start(dict(template=FIVE_ID,mode='live',request_id=str(uuid.uuid4()),indicators=[dict(id='return20',operator='>=',value=1000)]))
-            with patch('five_layer.timestamp',return_value=CUTOFF),patch('five_sources.public_bytes',side_effect=AssertionError('no network')):
+            with fixture_market_clock(),patch('five_layer.timestamp',return_value=CUTOFF),patch('five_sources.public_bytes',side_effect=AssertionError('no network')):
                 result=sc.execute(item,snapshot_getter=lambda:snap,industry_getter=lambda:classification,history_getter=lambda s,d,**kw:histories[s['code']],five_resources=resources)
             self.assertEqual(result['report']['counts']['passed'],0)
             self.assertTrue(any(c['id']=='CUSTOM_return20' for ev in result['report']['evaluations'] for c in ev['checks']))

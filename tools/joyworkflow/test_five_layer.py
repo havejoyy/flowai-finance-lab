@@ -7,6 +7,7 @@ import unittest
 import uuid
 from datetime import datetime,timedelta,timezone
 from unittest.mock import patch
+from functools import partial
 from engine import Store
 from market_store import MarketStore
 from industry_data import TAXONOMY
@@ -15,6 +16,11 @@ from five_layer import run_five,month_range,outcome,rule
 from five_sources import augment_ohlc,limit_pool,month_calendar,announcements
 
 DAY='2026-10-30';CUTOFF='2026-10-31T12:00:00+08:00'
+
+def fixture_market_clock():
+    clock = lambda: datetime.fromisoformat(CUTOFF)
+    return patch('screening.MarketStore', partial(MarketStore, now=clock))
+
 
 def fixture():
     end=datetime.fromisoformat(DAY);days=[];d=end
@@ -56,7 +62,7 @@ class FiveTests(unittest.TestCase):
     def run_fixture(self,snap,classification,histories,resources):
         tmp=tempfile.TemporaryDirectory();self.addCleanup(tmp.cleanup);store=Store(tmp.name);sc=ScreeningStore(store)
         item,_=sc.start(dict(template=FIVE_ID,mode='live',request_id=str(uuid.uuid4())))
-        with patch('five_layer.timestamp',return_value=CUTOFF),patch('five_sources.public_bytes',side_effect=AssertionError('Fixture test must never access network')):
+        with fixture_market_clock(),patch('five_layer.timestamp',return_value=CUTOFF),patch('five_sources.public_bytes',side_effect=AssertionError('Fixture test must never access network')):
             result=sc.execute(item,snapshot_getter=lambda:snap,industry_getter=lambda:classification,history_getter=lambda s,d,**kw:histories[s['code']],five_resources=resources)
         return result,store
     def test_real_only_strategy_and_saved_identity(self):

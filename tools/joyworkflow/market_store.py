@@ -69,6 +69,8 @@ class MarketStore:
             CREATE TABLE IF NOT EXISTS market_bars(batch_id TEXT,code TEXT,day TEXT,close REAL,amount REAL,pct REAL,
             PRIMARY KEY(batch_id,code,day));
             CREATE TABLE IF NOT EXISTS market_industry_members(batch_id TEXT,code TEXT,industry_code TEXT,industry_name TEXT,begin_day TEXT,PRIMARY KEY(batch_id,code,industry_code));
+            CREATE TABLE IF NOT EXISTS market_quote_checks(day TEXT,code TEXT,disposition TEXT,reason TEXT,source TEXT,
+            PRIMARY KEY(day,code));
             CREATE TABLE IF NOT EXISTS market_issues(id TEXT PRIMARY KEY,run_id TEXT,code TEXT,kind TEXT,reason TEXT,created_at TEXT);''')
     def retry(self,call,label):
         def notify(event):
@@ -209,6 +211,20 @@ class MarketStore:
         try:page=int(page);limit=int(limit)
         except (ValueError,TypeError):raise ValueError('页码无效') from None
         if page<1 or not 1<=limit<=100:raise ValueError('页码或每页数量无效')
+        rows,as_of,checked,classification_date=self.table_records()
+        values=[r for r in rows.values() if kind=='all' or r['kind']==kind];dates=sorted({r['date'] for r in values},reverse=True);q=query.strip().casefold()
+        values=[r for r in values if (not q or q in (r['code']+' '+r['name']+' '+r['industry']).casefold()) and (not date or r['date']==date) and (kind=='all' or r['kind']==kind) and (state=='all' or r['status']==('行情缺失' if state=='missing' else '基础排除'))]
+        values.sort(key=lambda r:(r['code'],r['kind']!='snapshot'));values.sort(key=lambda r:r['date'],reverse=True)
+        total=len(values);pages=max(1,math.ceil(total/limit));page=min(page,pages)
+        return dict(rows=values[(page-1)*limit:page*limit],total=total,page=page,pages=pages,limit=limit,as_of=as_of,checked_at=checked,classification_date=classification_date,dates=dates,date_from=dates[-1] if dates else '',date_to=dates[0] if dates else '',date_count=len(dates),date=date,kind=kind)
+
+    def quote_checks(self, day):
+        with self.store.connect() as db:
+            rows = db.execute("SELECT code,disposition,reason,source FROM market_quote_checks WHERE day=?", (day,))
+            return {r['code']: dict(r) for r in rows}
+
+    def table_records(self):
+        """Materialize the same dated rows for the table and the owner-only publisher."""
         with self.store.connect() as db:
             snapshots=db.execute("SELECT b.id,b.body,b.checked_at FROM market_heads h JOIN market_batches b ON h.batch_id=b.id WHERE h.kind='snapshot' AND b.adapter=? ORDER BY b.checked_at,b.id",(ADAPTER,)).fetchall()
             history_batches=db.execute("SELECT b.id,b.cache_key,b.as_of,b.checked_at,b.body,COUNT(k.day) observations FROM market_heads h JOIN market_batches b ON h.batch_id=b.id LEFT JOIN market_bars k ON k.batch_id=b.id WHERE h.kind='history' AND b.adapter=? GROUP BY b.id ORDER BY b.checked_at,b.id",(ADAPTER,)).fetchall()
@@ -225,12 +241,19 @@ class MarketStore:
             if industry:
                 try:snapshot=attach_industries(snapshot,industry['body'],industry['id']);classification_date=snapshot['industry_data']['observed_date']
                 except (ValueError,KeyError,TypeError):pass
+            checks = self.quote_checks(snapshot['as_of'])
             for r in snapshot['rows']:
                 key='%s.%s'%(r['market'],r['code']);names[key]=r['name'];industries[key]=r.get('industry') or '行业未知'
                 h=histories.get(key,{})
                 excluded='ST' in r['name'].upper() or '退' in r['name']
                 missing=not r.get('eod') or r.get('date')!=snapshot['as_of'] or any(r.get(k) is None for k in ('close','pct','amount')) or (r.get('close') or 0)<=0 or (r.get('amount') or 0)<=0
                 rows[('snapshot',key,snapshot['as_of'])]=dict(code=r['code'],name=r['name'],industry=industries[key],close=r.get('close') if (r.get('close') or 0)>0 else None,pct=r.get('pct') if (r.get('close') or 0)>0 else None,amount=r.get('amount') if (r.get('amount') or 0)>0 else None,date=snapshot['as_of'],history_date=h.get('as_of',''),history_count=h.get('observations',0),status='基础排除' if excluded else '行情缺失' if missing else '已保存',kind='snapshot',basis='不复权（收盘快照）')
+                check = checks.get(r['code'])
+                if missing and check:
+                    record = rows[('snapshot',key,snapshot['as_of'])]
+                    if check['disposition'] == 'no_trade':
+                        record['status'] = '基础排除'
+                    record['basis'] = check['reason'] + '（' + check['source'] + '）'
         if industry:
             # These labels describe current classification, not historical membership.
             membership={}
@@ -244,15 +267,11 @@ class MarketStore:
             excluded='ST' in name.upper() or '退' in name
             h=histories.get(key,{})
             rows[('history',key,r['day'])]=dict(code=code,name=name,industry=label,close=r['close'],pct=r['pct'],amount=r['amount'],date=r['day'],history_date=h.get('as_of',''),history_count=h.get('observations',0),status='基础排除' if excluded else '已保存',kind='history',basis=batches.get(r['batch_id'],'口径未知'))
-        values=[r for r in rows.values() if kind=='all' or r['kind']==kind];dates=sorted({r['date'] for r in values},reverse=True);q=query.strip().casefold()
-        values=[r for r in values if (not q or q in (r['code']+' '+r['name']+' '+r['industry']).casefold()) and (not date or r['date']==date) and (kind=='all' or r['kind']==kind) and (state=='all' or r['status']==('行情缺失' if state=='missing' else '基础排除'))]
-        values.sort(key=lambda r:(r['code'],r['kind']!='snapshot'));values.sort(key=lambda r:r['date'],reverse=True)
-        total=len(values);pages=max(1,math.ceil(total/limit));page=min(page,pages)
-        return dict(rows=values[(page-1)*limit:page*limit],total=total,page=page,pages=pages,limit=limit,as_of=as_of,checked_at=checked,classification_date=classification_date,dates=dates,date_from=dates[-1] if dates else '',date_to=dates[0] if dates else '',date_count=len(dates),date=date,kind=kind)
+        return rows,as_of,checked,classification_date
 
     def status(self):
         with self.store.connect() as db:
-            row=db.execute("SELECT b.as_of,b.checked_at,b.body FROM market_heads h JOIN market_batches b ON h.batch_id=b.id WHERE h.kind='snapshot' AND b.adapter=? ORDER BY b.checked_at DESC LIMIT 1",(ADAPTER,)).fetchone()
+            row=db.execute("SELECT b.as_of,b.checked_at,b.body FROM market_heads h JOIN market_batches b ON h.batch_id=b.id WHERE h.kind='snapshot' AND b.adapter=? ORDER BY b.as_of DESC,b.checked_at DESC LIMIT 1",(ADAPTER,)).fetchone()
             count=db.execute('SELECT COUNT(*) FROM market_heads WHERE kind=?',('history',)).fetchone()[0]
             resources=[dict(r) for r in db.execute("SELECT b.kind,b.cache_key,b.as_of,b.checked_at FROM market_heads h JOIN market_batches b ON h.batch_id=b.id WHERE h.kind LIKE 'five.%' ORDER BY b.kind,b.as_of DESC,b.cache_key")]
         snapshot=json.loads(row['body']) if row else {}
@@ -261,6 +280,8 @@ class MarketStore:
         if industry and snapshot:
             try:meta=attach_industries(snapshot,industry['body'],industry['id'])['industry_data']
             except (ValueError,KeyError,TypeError):pass
+        checks = self.quote_checks(snapshot.get('as_of',''))
+        no_trade = {code for code, check in checks.items() if check['disposition'] == 'no_trade'}
         return dict(as_of=row['as_of'] if row else '',checked_at=row['checked_at'] if row else '',source=snapshot.get('source',''),
-                    quote_missing=sum(not r.get('eod') or r.get('close') is None or r.get('pct') is None or r.get('amount') is None or r.get('amount',0)<=0 for r in snapshot.get('rows',[]) if 'ST' not in r.get('name','').upper() and '退' not in r.get('name','')),industry_data=({k:v for k,v in meta.items() if k not in ('unknown','conflicts')} if meta else None),warnings=snapshot.get('warnings',[]),industry_available=bool(meta and meta['matched']) or any(r.get('industry') not in ('行业未知','-','',None) for r in snapshot.get('rows',[])),history_entries=count,sqlite=True,five_resources=resources,
+                    quote_missing=sum(not r.get('eod') or r.get('close') is None or r.get('pct') is None or r.get('amount') is None or r.get('amount',0)<=0 for r in snapshot.get('rows',[]) if r['code'] not in no_trade and 'ST' not in r.get('name','').upper() and '退' not in r.get('name','')),industry_data=({k:v for k,v in meta.items() if k not in ('unknown','conflicts')} if meta else None),warnings=snapshot.get('warnings',[]),industry_available=bool(meta and meta['matched']) or any(r.get('industry') not in ('行业未知','-','',None) for r in snapshot.get('rows',[])),history_entries=count,sqlite=True,five_resources=resources,
                     message='本地日期仅表示来源快照；未接交易日历，不宣称已确认最近交易日。')

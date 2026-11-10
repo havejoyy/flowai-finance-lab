@@ -154,18 +154,26 @@ class HTTPTests(unittest.TestCase):
                 line=process.stdout.readline().strip()
                 url=line.removeprefix('JoyWorkflow: ')
                 self.assertTrue(url.startswith('http://127.0.0.1:'))
-                with urlopen(url+'/observe') as r: html=r.read().decode()
-                token=html.split("const token='")[1].split("'")[0]
+                with urlopen(url+'/screen') as response:
+                    html=response.read().decode()
+                token=html.split("token='")[1].split("'")[0]
+                for key in ('local-data','custom','strategy-config','report'):
+                    self.assertIn('data-page="'+key+'"',html)
+                self.assertEqual(html.count('data-page="'),4)
+                for path in ('/observe','/skill','/api/state','/api/skill-info','/api/emotion-reviews'):
+                    with self.assertRaises(HTTPError) as ctx:urlopen(url+path)
+                    self.assertEqual(ctx.exception.code,404)
                 for headers in ({},{'X-Workflow-Token':token,'Origin':'https://evil.example'}):
                     with self.assertRaises(HTTPError) as ctx:
-                        urlopen(Request(url+'/api/demo',data=b'{}',headers=headers))
+                        urlopen(Request(url+'/api/screen-runs',data=b'{}',headers=headers))
                     self.assertEqual(ctx.exception.code,403)
-                with urlopen(Request(url+'/api/demo',data=b'{}',headers={'X-Workflow-Token':token})) as r:
-                    self.assertEqual(len(json.load(r)['results']),4)
-                with urlopen(url+'/api/state') as r:
-                    self.assertEqual(len(json.load(r)['batches']),1)
-                with self.assertRaises(HTTPError):
-                    urlopen(Request(url+'/api/state',headers={'Host':'evil.example'}))
+                with self.assertRaises(HTTPError) as ctx:
+                    urlopen(Request(url+'/api/config',data=b'{}',headers={'X-Workflow-Token':token}))
+                self.assertEqual(ctx.exception.code,404)
+                with urlopen(url+'/api/screen-presets') as response:self.assertTrue(json.load(response)['presets'])
+                with self.assertRaises(HTTPError) as ctx:
+                    urlopen(Request(url+'/api/screen-runs',headers={'Host':'evil.example'}))
+                self.assertEqual(ctx.exception.code,403)
             finally:
                 process.terminate(); process.communicate(timeout=5)
 

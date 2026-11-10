@@ -32,7 +32,28 @@ class DataUpdates:
                 'SELECT body FROM data_updates ORDER BY created_at DESC LIMIT 1').fetchone()
         if identifier and not row:
             raise ValueError('更新任务不存在')
-        return json.loads(row['body']) if row else None
+        if not row:
+            return None
+        item = json.loads(row['body'])
+        if item['state'] != 'PARTIAL' or not item.get('issues'):
+            return item
+        checks = MarketStore(self.store).quote_checks(item['as_of'])
+        remaining = []
+        for issue in item['issues']:
+            # Industry lookups have their own evidence, even when they name a stock.
+            if issue.get('kind') == 'industry' or issue['reason'].startswith('行业分类') or not issue.get('code'):
+                remaining.append(issue)
+                continue
+            check = checks.get(issue['code'], {})
+            if check.get('disposition') == 'no_trade':
+                continue
+            if check.get('disposition') == 'pending':
+                issue['reason'] = check['reason']
+            remaining.append(issue)
+        item['issues'] = remaining
+        if not remaining:
+            item.update(state='COMPLETED', message='核验完成，行情日期 '+item['as_of'])
+        return item
 
     def start(self):
         item = dict(id=str(uuid.uuid4()), created_at=timestamp(), state='RUNNING',
@@ -54,11 +75,12 @@ class DataUpdates:
             manager = MarketStore(self.store, item['id'], progress, force=True)
             snapshot = manager.snapshot(snapshot_getter, refresh=True)
             item.update(as_of=snapshot['as_of'], source=snapshot['source'], source_count=len(snapshot['rows']))
+            checks = manager.quote_checks(snapshot['as_of'])
             for stock in snapshot['rows']:
                 if 'ST' in stock['name'].upper() or '退' in stock['name']:
                     continue
                 reason = quote_gap_reason(stock, snapshot['as_of'])
-                if reason:
+                if reason and checks.get(stock['code'], {}).get('disposition') != 'no_trade':
                     item['issues'].append(dict(code=stock['code'], name=stock['name'], reason=reason))
             progress('行情已保存，正在更新行业分类…')
             try:
@@ -74,6 +96,7 @@ class DataUpdates:
                     item['issues'].append(dict(code='', name='行业 '+code, reason=str(error.get('reason', error))))
             except Exception as exc:
                 item['issues'].append(dict(code='', name='行业分类', reason=error_info(exc)['message']))
+            item.update(snapshot_batch=manager.refs['snapshot'],industry_batch=manager.refs.get('industry'))
             item['state'] = 'PARTIAL' if item['issues'] else 'COMPLETED'
             item['message'] = ('部分更新完成' if item['issues'] else '更新完成') + '，行情日期 ' + item['as_of']
         except Exception as exc:
