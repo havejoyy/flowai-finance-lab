@@ -1,11 +1,9 @@
-import copy,json,hashlib,shutil,subprocess,sys,tempfile,threading,time,unittest
+import copy,json,hashlib,shutil,tempfile,unittest
 from pathlib import Path
 from unittest.mock import patch
-from urllib.error import HTTPError
-from urllib.request import Request,urlopen
 from engine import Store,encode
 from skill_runner import SkillStore,resources,sample,preview,validate_output,model_info,RESOURCE,input_material
-from demo_model import fixture_output,server,MODEL
+from demo_model import fixture_output,MODEL
 
 class SkillTests(unittest.TestCase):
     def setUp(self):
@@ -81,62 +79,5 @@ class SkillTests(unittest.TestCase):
         p={'plan':{'name':'x','version':'1','definition':'x','horizons':[1],'benchmark':'000300.SH','source':'csv'},'as_of':'2026-01-05','candidates':[]}
         self.store.create_batch(p);self.assertEqual(self.store.batches()[0]['data_kind'],'unknown')
         p.update(data_kind='synthetic');self.store.create_batch(p);self.assertEqual(self.store.batches()[0]['data_kind'],'synthetic')
-
-class LocalFlowTests(unittest.TestCase):
-    def test_http_full_flow_restart_and_failures(self):
-        with tempfile.TemporaryDirectory() as directory:
-            fixture=server(0);threading.Thread(target=fixture.serve_forever,daemon=True).start()
-            self.addCleanup(fixture.server_close);self.addCleanup(fixture.shutdown)
-            config={'llm_url':'http://127.0.0.1:%d/v1/chat/completions'%fixture.server_port,'llm_model':MODEL}
-            (Path(directory)/'config.json').write_text(encode(config), encoding='utf-8');process=None
-            def launch():
-                p=subprocess.Popen([sys.executable,'app.py','--no-browser','--port','0','--data-dir',directory],stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True,encoding='utf-8')
-                line=p.stdout.readline().strip();self.assertTrue(line.startswith('JoyWorkflow: '),line)
-                url=line.removeprefix('JoyWorkflow: ')
-                with urlopen(url+'/skill') as r:html=r.read().decode()
-                token=html.split("token='")[1].split("'")[0]
-                return p,url,token
-            def call(path,body=None,headers=None):
-                request=Request(url+'/api/'+path,data=None if body is None else encode(body).encode(),headers=headers or {'X-Workflow-Token':token,'Content-Type':'application/json'})
-                with urlopen(request,timeout=5) as r:return json.load(r)
-            def result(identifier):
-                for _ in range(100):
-                    r=call('skill-runs?id='+identifier)
-                    if r['state']!='RUNNING':return r
-                    time.sleep(.02)
-                self.fail('task timeout')
-            try:
-                process,url,token=launch();self.assertEqual(call('skill-info')['model']['model'],MODEL)
-                data=call('skill-sample');draft=call('skill-preview',data)
-                with self.assertRaises(HTTPError):call('skill-runs',{'id':draft['id'],'consent':False})
-                with self.assertRaises(HTTPError):call('skill-preview',data,{'Origin':'https://evil.example','X-Workflow-Token':token})
-                self.assertEqual(fixture.calls,0)
-                first=call('skill-runs',{'id':draft['id'],'consent':True})
-                r=result(first['id']);self.assertEqual(r['state'],'COMPLETED',r.get('error'))
-                repeated=call('skill-runs',{'id':first['id'],'consent':True})
-                self.assertTrue(repeated['deduplicated']);self.assertEqual(fixture.calls,1)
-                self.assertEqual(call('skill-export?id='+first['id'])['input_hash'],draft['input_hash'])
-                self.assertTrue(Path(call('backup',{})['path']).exists())
-                full=call('skill-sample?kind=complete')
-                complete=call('skill-preview',full)
-                call('skill-runs',{'id':complete['id'],'consent':True})
-                self.assertEqual(result(complete['id'])['state'],'COMPLETED')
-                self.assertEqual(fixture.calls,2)
-                self.assertEqual(call('skill-sample?kind=template')['data_kind'],'unknown')
-                with urlopen(url+'/api/skill-material?name=guide') as guide:
-                    self.assertIn('资料怎么准备',guide.read().decode())
-                with self.assertRaises(HTTPError):call('skill-material?name=../config.json')
-                with self.assertRaises(HTTPError):call('skill-sample?kind=../config.json')
-                second=call('skill-preview',dict(data,text='不同输入，不是模拟器支持的样例'))
-                call('skill-runs',{'id':second['id'],'consent':True});self.assertEqual(result(second['id'])['state'],'FAILED')
-                process.terminate();process.communicate(timeout=5);process,url,token=launch()
-                self.assertEqual(call('skill-runs?id='+first['id'])['state'],'COMPLETED')
-                self.assertEqual(len(call('skill-runs')['runs']),3);self.assertEqual(fixture.calls,2)
-                call('config',{'llm_key':'testing-only'});call('config',{'clear':['llm_key']})
-                self.assertNotIn('llm_key',json.loads((Path(directory)/'config.json').read_text(encoding='utf-8')))
-                with self.assertRaises(HTTPError):call('run',{'observed':'2999-01-01'})
-                self.assertFalse(call('skill-info')['busy'])
-            finally:
-                if process:process.terminate();process.communicate(timeout=5)
 
 if __name__=='__main__':unittest.main()

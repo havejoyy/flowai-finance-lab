@@ -3,7 +3,7 @@ import hashlib,json,os,platform,plistlib,shutil,subprocess,sys
 from pathlib import Path
 from release_version import VERSION
 ROOT=Path(__file__).resolve().parent
-ASSETS=['screen.html','ui.html','skill.html','输入资料说明.md','templates/five-layer-input.txt','examples/five-layer-complete.txt','examples/five-layer.txt','skills/youzi-market-research/SKILL.md','skills/youzi-market-research/references/funnel-framework.md','skills/youzi-market-research/manifest.json','strategies/youzi-five-layer-breakout-v1.json']
+ASSETS=['screen.html','输入资料说明.md','templates/five-layer-input.txt','examples/five-layer-complete.txt','examples/five-layer.txt','skills/youzi-market-research/SKILL.md','skills/youzi-market-research/references/funnel-framework.md','skills/youzi-market-research/manifest.json','strategies/youzi-five-layer-breakout-v1.json']
 def main():
     if sys.platform!='darwin' or platform.machine()!='arm64':raise SystemExit('此构建脚本仅在 Apple Silicon macOS 上构建；其他平台须原生构建验证。')
     from skill_runner import resources

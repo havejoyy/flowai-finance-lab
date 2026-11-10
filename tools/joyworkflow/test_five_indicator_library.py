@@ -4,7 +4,7 @@ from unittest.mock import patch
 from engine import Store
 from screening import ScreeningStore,strategy,FIVE_ID
 from five_indicator_library import FIVE_INDICATORS,QUALITY_INDICATORS,defaults,validate_rules,RuleBook
-from test_five_layer import fixture,CUTOFF
+from test_five_layer import fixture,CUTOFF,fixture_market_clock
 
 class FiveLibraryTests(unittest.TestCase):
     def config(self,rows):return dict(template=FIVE_ID,five_rules=rows,mode='live',request_id=str(uuid.uuid4()))
@@ -13,7 +13,7 @@ class FiveLibraryTests(unittest.TestCase):
         if resources_change:resources_change(resources)
         with tempfile.TemporaryDirectory() as tmp:
             sc=ScreeningStore(Store(tmp));item,_=sc.start(self.config(rows))
-            with patch('five_layer.timestamp',return_value=CUTOFF),patch('five_sources.public_bytes',side_effect=AssertionError('never network')):
+            with fixture_market_clock(),patch('five_layer.timestamp',return_value=CUTOFF),patch('five_sources.public_bytes',side_effect=AssertionError('never network')):
                 result=sc.execute(item,snapshot_getter=lambda:snap,industry_getter=lambda:classification,history_getter=lambda s,d,**kw:histories[s['code']],five_resources=resources)
             self.assertIn('report',result,result['message']);return result
     def test_catalog_all_layers_and_legacy_default_identity(self):

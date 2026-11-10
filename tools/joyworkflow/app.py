@@ -5,14 +5,12 @@ import os
 import secrets
 import sys
 import threading
-import uuid
 import webbrowser
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import urlparse, parse_qs
-from engine import Store, csv_rows, encode, timestamp, day, today
-from providers import sync_market, ai_review
-from skill_runner import SkillStore, resources, sample, input_material, model_info, text_report
+from engine import Store, encode
+from providers import sync_market
 from contextlib import contextmanager
 from screening import ScreeningStore, PRESETS, LIMITS
 from screening_indicators import INDICATORS
@@ -57,29 +55,10 @@ def default_root():
 def serve(store, port=8766, browser=True, on_ready=None, desktop_instance=None, shutdown_event=None):
     token = secrets.token_urlsafe(32)
     lock = threading.Lock()
-    config_path = store.root / 'config.json'
-    skill_store = SkillStore(store)
-    skill_store.recover()
     screening_store = ScreeningStore(store)
     screening_store.recover()
     data_updates = DataUpdates(store)
     data_updates.recover()
-
-    def config():
-        return json.loads(config_path.read_text('utf-8')) if config_path.exists() else {}
-
-    def run(observed):
-        try:
-            cfg = config()
-            store.run(observed, lambda batches, date: sync_market(store, batches, date, cfg.get('tushare_token', '')))
-        finally:
-            lock.release()
-
-    def skill_work(item, cfg):
-        try:
-            skill_store.execute(item, cfg)
-        finally:
-            lock.release()
 
     def screen_work(item):
         try:
@@ -121,12 +100,6 @@ def serve(store, port=8766, browser=True, on_ready=None, desktop_instance=None, 
             if parsed.path in ('/', '/screen'):
                 html = Path(__file__).with_name('screen.html').read_text('utf-8').replace('__TOKEN__', token)
                 return self.reply(html, mime='text/html; charset=utf-8')
-            if parsed.path == '/observe':
-                html = Path(__file__).with_name('ui.html').read_text('utf-8').replace('__TOKEN__', token)
-                return self.reply(html, mime='text/html; charset=utf-8')
-            if parsed.path == '/skill':
-                html = Path(__file__).with_name('skill.html').read_text('utf-8').replace('__TOKEN__', token)
-                return self.reply(html, mime='text/html; charset=utf-8')
             if parsed.path.startswith('/api/screen-'):
                 try:
                     if parsed.path == '/api/screen-data-update':
@@ -153,44 +126,6 @@ def serve(store, port=8766, browser=True, on_ready=None, desktop_instance=None, 
                     return self.reply({'error':'未知筛选入口'},404)
                 except ValueError as exc:
                     return self.reply({'error':str(exc)},400)
-            if parsed.path.startswith('/api/skill-'):
-                try:
-                    if parsed.path == '/api/skill-info':
-                        try:
-                            skill = resources()
-                            availability = {'name': skill['name'], 'hashes': skill['hashes'], 'error': ''}
-                        except ValueError as exc:
-                            availability = {'error': str(exc)}
-                        try:
-                            model = model_info(config())
-                        except ValueError:
-                            model = {'configured': False, 'error': '模型配置无效，请重新设置'}
-                        return self.reply({'skill': availability, 'model': model, 'data_directory': str(store.root),
-                                           'busy': lock.locked(), 'version': store.state()['version']})
-                    if parsed.path == '/api/skill-sample':
-                        return self.reply(sample(parse_qs(parsed.query).get('kind', ['sparse'])[0]))
-                    if parsed.path == '/api/skill-material':
-                        name = parse_qs(parsed.query).get('name', ['guide'])[0]
-                        return self.reply(input_material(name), mime='text/plain; charset=utf-8')
-                    if parsed.path in ('/api/skill-runs', '/api/skill-export'):
-                        identifier = parse_qs(parsed.query).get('id', [''])[0]
-                        if not identifier and parsed.path == '/api/skill-runs':
-                            return self.reply({'runs': skill_store.list()})
-                        item = skill_store.get(identifier)
-                        if parse_qs(parsed.query).get('format') == ['text']:
-                            return self.reply(text_report(item), mime='text/plain; charset=utf-8')
-                        return self.reply(item)
-                except ValueError as exc:
-                    return self.reply({'error': str(exc)}, 400)
-                except Exception:
-                    return self.reply({'error': '读取记录失败，请检查本地数据与配置'}, 500)
-            if parsed.path == '/api/state':
-                return self.reply({**store.state(), 'busy': lock.locked()})
-            if parsed.path == '/api/export':
-                identifier = parse_qs(parsed.query).get('id', [''])[0]
-                with store.connect() as db:
-                    row = db.execute('SELECT body FROM evaluations WHERE id=?', (identifier,)).fetchone()
-                return self.reply(json.loads(row['body']) if row else {'error': '评估不存在'}, 200 if row else 404)
             return self.reply({'error': 'Not found'}, 404)
 
         def do_POST(self):
@@ -198,6 +133,8 @@ def serve(store, port=8766, browser=True, on_ready=None, desktop_instance=None, 
             if (not self.valid_host() or self.headers.get('X-Workflow-Token') != token or
                 origin not in (None, 'http://' + self.headers.get('Host', ''))):
                 return self.reply({'error': '请求校验失败'}, 403)
+            if self.path not in ('/api/screen-preflight','/api/screen-data-update','/api/screen-strategies','/api/screen-runs'):
+                return self.reply({'error': 'Not found'}, 404)
             try:
                 size = int(self.headers.get('Content-Length', '0'))
                 if size < 0 or size > 8 * 1024 * 1024:
@@ -207,10 +144,6 @@ def serve(store, port=8766, browser=True, on_ready=None, desktop_instance=None, 
                     raise ValueError('请求须为JSON对象')
                 if self.path == '/api/screen-preflight':
                     return self.reply({'existing':screening_store.previous_screening(data)})
-                if self.path == '/api/skill-runs' and data.get('consent') is True:
-                    existing = skill_store.get(data.get('id', ''))
-                    if existing['state'] != 'DRAFT':
-                        return self.reply({'id': existing['id'], 'state': existing['state'], 'deduplicated': True})
                 if self.path == '/api/screen-runs':
                     existing = screening_store.duplicate(data)
                     if existing:
@@ -232,59 +165,6 @@ def serve(store, port=8766, browser=True, on_ready=None, desktop_instance=None, 
                         if started:
                             threading.Thread(target=screen_work,args=(item,),daemon=True).start()
                             background = True
-                    elif self.path == '/api/skill-preview':
-                        result = skill_store.draft(data, config())
-                    elif self.path == '/api/skill-runs':
-                        cfg = config()
-                        item, started = skill_store.start(data.get('id', ''), cfg, data.get('consent'))
-                        result = {'id': item['id'], 'state': item['state'], 'deduplicated': not started}
-                        if started:
-                            threading.Thread(target=skill_work, args=(item, cfg), daemon=True).start()
-                            background = True
-                    elif self.path == '/api/run':
-                        observed = day(data.get('observed') or today())
-                        if observed > today():
-                            raise ValueError('不能运行未来日期')
-                        threading.Thread(target=run, args=(data.get('observed'),), daemon=True).start()
-                        background = True
-                        result = {'message': '已启动；结果请查看运行记录'}
-                    elif self.path == '/api/demo':
-                        result = store.demo()
-                    elif self.path == '/api/batches':
-                        result = store.create_batch(data)
-                    elif self.path == '/api/import-market':
-                        result = store.import_market('csv', csv_rows(data['prices']), csv_rows(data['calendar']))
-                    elif self.path == '/api/config':
-                        old = config()
-                        clearing = data.get('clear', [])
-                        if not isinstance(clearing, list) or any(k not in ('tushare_token', 'llm_key', 'llm_url', 'llm_model') for k in clearing):
-                            raise ValueError('清除配置项无效')
-                        for key in clearing:
-                            old.pop(key, None)
-                        for key in ('tushare_token', 'llm_key', 'llm_url', 'llm_model'):
-                            if data.get(key):
-                                old[key] = str(data[key]).strip()
-                        temporary = config_path.with_suffix('.tmp')
-                        fd = os.open(str(temporary), os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
-                        os.chmod(temporary, 0o600)
-                        with os.fdopen(fd, 'w', encoding='utf-8') as stream:
-                            stream.write(encode(old))
-                        os.replace(temporary, config_path)
-                        result = {'message': '配置已保存；密钥不会返回页面。留空保留旧值。'}
-                    elif self.path == '/api/backup':
-                        result = {'path': store.backup()}
-                    elif self.path == '/api/ai':
-                        if data.get('consent') is not True:
-                            raise ValueError('需明确同意发送规则、候选代码与统计给模型服务商')
-                        with store.connect() as db:
-                            row = db.execute('SELECT body FROM evaluations WHERE id=?', (data['id'],)).fetchone()
-                        if not row:
-                            raise ValueError('评估不存在')
-                        cfg = config()
-                        content = ai_review(json.loads(row['body']), cfg)
-                        with store.connect() as db:
-                            db.execute('INSERT INTO ai_reports VALUES(?,?,?,?,?)', (str(uuid.uuid4()), data['id'], timestamp(), cfg.get('llm_model'), content))
-                        result = {'review': content}
                     else:
                         raise ValueError('未知操作')
                     self.reply(result, 202 if background else 200)
