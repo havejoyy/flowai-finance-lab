@@ -2,16 +2,16 @@
 
 从游资五层框架出发，选择或自定义量化研究条件，自动获取公开行情，在本地完成校验、筛选、可视化报告与历史留档。**规则代码计算，本轮不调用 AI 模型，不自动交易。**
 
-当前开源源码的工作台提供四个模块，按顺序为 **本地数据、我的策略、策略筛选、历史筛选**。下方 0.5.2 安装包属于此前发布的版本。
+当前开源源码的工作台提供四个模块，按顺序为 **本地数据、我的策略、策略筛选、历史筛选**。下方两个免安装包均包含这四个模块。
 
 ## 下载即用
 
 | 平台 | 下载 | 启动 |
 |---|---|---|
-| Windows x64 0.5.2 | [便携版 ZIP](https://github.com/havejoyy/flowai-finance-lab/releases/download/joyworkflow-v0.5.2/JoyWorkflow-Windows-x64-0.5.2.zip) | 完整解压，双击 `JoyWorkflow.exe` |
-| Mac Apple Silicon 0.5.2 | [应用 ZIP](https://github.com/havejoyy/flowai-finance-lab/releases/download/joyworkflow-v0.5.2/JoyWorkflow-macOS-AppleSilicon-0.5.2.zip) | 解压，双击 `JoyWorkflow.app` |
+| Windows x64 0.5.2 | [便携版 ZIP](https://github.com/havejoyy/flowai-finance-lab/releases/download/joyworkflow-v0.5.2-open.1/JoyWorkflow-Windows-x64-0.5.2-open.1.zip) | 完整解压，双击 `JoyWorkflow.exe` |
+| Mac Apple Silicon 0.5.2 | [应用 ZIP](https://github.com/havejoyy/flowai-finance-lab/releases/download/joyworkflow-v0.5.2-open.1/JoyWorkflow-macOS-AppleSilicon-0.5.2-open.1.zip) | 解压，双击 `JoyWorkflow.app` |
 
-两种应用均内置 Python 和 SQLite，不需安装 Python、Node、数据库，也不需要自己准备行情或 API Key。[Windows版本页](https://github.com/havejoyy/flowai-finance-lab/releases/tag/joyworkflow-v0.5.2) · [桌面使用说明](docs/桌面应用使用说明.md) · [手机端方案](docs/手机端方案.md)。
+两种应用均内置 Python 和 SQLite，不需安装 Python、Node、数据库，也不需要自己准备行情或 API Key。[双平台下载页](https://github.com/havejoyy/flowai-finance-lab/releases/tag/joyworkflow-v0.5.2-open.1) · [桌面使用说明](docs/桌面应用使用说明.md) · [手机端方案](docs/手机端方案.md)。
 
 Windows便携版启动后自动在默认浏览器打开本机研究页面，启动器提供重新打开、数据文件夹、日志和退出入口。必须保留 `_internal` 文件夹；不要直接在ZIP里运行，也不要只复制exe。关闭网页不会停止服务，退出启动器才会停止。
 
